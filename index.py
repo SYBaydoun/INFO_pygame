@@ -150,7 +150,6 @@ for filename in os.listdir("images"):
         bg = pygame.transform.smoothscale(bg, (new_width, new_height))
 
         backgrounds[filename] = bg
-print(backgrounds)
 
 
 #-------------------------------------------
