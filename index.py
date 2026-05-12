@@ -7,7 +7,7 @@ WIDTH  = 1200
 HEIGHT = 800
 
 TITLE = "SpaceBusiness"
-creditMsg = "Game developed by:\nShahin Youssef Baydoun\n Moralische unterstüzung:\nHugo :)\ntest"
+creditMsg = "Game developed by:\nShahin Youssef Baydoun\n Moralische Unterstützung:\nHugo :)\ntest"
 
 #Buttons im Menübereich
 menuLibrary = {"menu_items": ["Start New Game", "Continue Game", "Settings", "Credits", "Quit"],
@@ -45,7 +45,9 @@ class MenuSzene():
             self.title,
             center=(WIDTH // 2, 120),
             fontsize=60,
-            color="white"
+            color="white",
+            owidth=3,
+            ocolor="red"
         )
 
         for text, rect, surface in self.buttons:
@@ -67,7 +69,9 @@ class MenuSzene():
                     line,
                     center=(WIDTH // 2, start_y + i * 50),
                     fontsize=fontsize,
-                    color="white"
+                    color="white",
+                    owidth=2.5,
+                    ocolor="black"
                 )
     
 #Szene Hauptmenü
