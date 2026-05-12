@@ -7,6 +7,7 @@ WIDTH  = 1200
 HEIGHT = 800
 
 TITLE = "SpaceBusiness"
+creditMsg = "Game developed by:\nShahin Youssef Baydoun\n Moralische unterstüzung:\nHugo :)\ntest"
 
 #Buttons im Menübereich
 menuLibrary = {"menu_items": ["Start New Game", "Continue Game", "Settings", "Credits", "Quit"],
@@ -18,11 +19,12 @@ menuLibrary = {"menu_items": ["Start New Game", "Continue Game", "Settings", "Cr
 #-------------------------------------------
 #Parent Classe Für die Menü Szenen
 class MenuSzene():
-    def __init__(self, items: str, buttons:str, draw_bg:str, title:str):
+    def __init__(self, items: str, buttons:str, draw_bg:str, title:str, text: str = ""):
         self.items = menuLibrary[items]
         self.buttons = []
         self.draw_bg = draw_bg
         self.title = title
+        self.text = text
         self.setup()
     
     def setup(self):
@@ -45,6 +47,7 @@ class MenuSzene():
             fontsize=60,
             color="white"
         )
+
         for text, rect, surface in self.buttons:
             screen.blit(surface, rect.topleft)
 
@@ -54,6 +57,18 @@ class MenuSzene():
                 fontsize=30,
                 color="white"
             )
+
+        if self.text != "":
+            lines = self.text.split('\n')
+            start_y = 200 + len(self.buttons) * 70 + 50
+            for i, line in enumerate(lines):
+                fontsize = 20 if i % 2 == 0 else 50  # Gerade Zeilen größer, ungerade kleiner
+                screen.draw.text(
+                    line,
+                    center=(WIDTH // 2, start_y + i * 50),
+                    fontsize=fontsize,
+                    color="white"
+                )
     
 #Szene Hauptmenü
 class Menu(MenuSzene):
@@ -129,7 +144,7 @@ class Settings(MenuSzene):
 #Szene Credits [ Me ;) ]
 class Credits(MenuSzene):
     def __init__(self):
-        super().__init__("credits_items", "credits_buttons", "bg_menu.jpg", "Credits")
+        super().__init__("credits_items", "credits_buttons", "bg_menu.jpg", "Credits", creditMsg)
     
     def on_mouse_down(self, pos):
         global menu
