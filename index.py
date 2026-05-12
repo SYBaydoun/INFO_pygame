@@ -2,42 +2,50 @@ import pgzrun
 import pygame
 import os
 
-TITLE = "SpaceBusines"
-
+#Parameter
 WIDTH  = 1200
 HEIGHT = 800
 
-#-------------------------------------------
-#Menü Klassen
-class Menu:
-    def __init__(self):
-        self.menu_items = ["Start New Game", "Continue Game", "Settings", "Credits", "Quit"]
-        self.menu_buttons = []
-        self.setup()
+TITLE = "SpaceBusiness"
 
+#Buttons im Menübereich
+menuLibrary = {"menu_items": ["Start New Game", "Continue Game", "Settings", "Credits", "Quit"],
+               "new_items": ["Back", "Easy", "Medium", "Hard"],
+               "continue_items": ["Back", "Save 1", "Save 2", "Save 3"],
+               "settings_items": ["Back", "Audio", "Video", "Controls"],
+               "credits_items": ["Back"]}
+
+#-------------------------------------------
+#Parent Classe Für die Menü Szenen
+class MenuSzene():
+    def __init__(self, items: str, buttons:str, draw_bg:str, title:str):
+        self.items = menuLibrary[items]
+        self.buttons = []
+        self.draw_bg = draw_bg
+        self.title = title
+        self.setup()
+    
     def setup(self):
         start_y = 250
 
-        for i, text in enumerate(self.menu_items):
+        for i, text in enumerate(self.items):
             rect = pygame.Rect(0, 0, 300, 50)
             rect.center = (WIDTH // 2, start_y + i * 70)
 
             surface = pygame.Surface((300, 50), pygame.SRCALPHA)
             pygame.draw.rect(surface, (0, 0, 255, 100), (0, 0, 300, 50), border_radius=15)
 
-            self.menu_buttons.append((text, rect, surface))
+            self.buttons.append((text, rect, surface))
 
     def draw(self):
-        bliting_bg("bg_menu.jpg")
-
+        bliting_bg(self.draw_bg)
         screen.draw.text(
-            TITLE,
+            self.title,
             center=(WIDTH // 2, 120),
             fontsize=60,
             color="white"
         )
-
-        for text, rect, surface in self.menu_buttons:
+        for text, rect, surface in self.buttons:
             screen.blit(surface, rect.topleft)
 
             screen.draw.text(
@@ -46,16 +54,18 @@ class Menu:
                 fontsize=30,
                 color="white"
             )
-
+    
+#Szene Hauptmenü
+class Menu(MenuSzene):
+    def __init__(self):
+        super().__init__("menu_items", "menu_buttons", "bg_menu.jpg", TITLE)
+    
     def on_mouse_down(self, pos):
         global menu
 
-        for text, rect, surface in self.menu_buttons:
+        for text, rect, surface in self.buttons:
             if rect.collidepoint(pos):
-                if text == "Quit":
-                    pygame.quit()
-                    exit()
-                elif text == "Start New Game":
+                if text == "Start New Game":
                     menu = NewGame()
                 elif text == "Continue Game":
                     menu = ContinueGame()
@@ -63,72 +73,72 @@ class Menu:
                     menu = Settings()
                 elif text == "Credits":
                     menu = Credits()
+                elif text == "Quit":
+                    pygame.quit()
+                    exit()
 
-class NewGame:
+#Szene Neues Spiel
+class NewGame(MenuSzene):
     def __init__(self):
-        self.new_items = ["Back", "Einfach", "Normal", "Schwer"]
-        self.new_buttons = []
-        self.setup()
+        super().__init__("new_items", "new_buttons", "bg_new.jpg", "Start New Game")
     
-    def setup(self):
-        start_y = 250
-
-        for i, text in enumerate(self.new_items):
-            rect = pygame.Rect(0, 0, 300, 50)
-            rect.center = (WIDTH // 2, start_y + i * 70)
-
-            surface = pygame.Surface((300, 50), pygame.SRCALPHA)
-            pygame.draw.rect(surface, (0, 0, 255, 100), (0, 0, 300, 50), border_radius=15)
-
-            self.new_buttons.append((text, rect, surface))
-
-    def draw(self):
-        bliting_bg("bg_new.jpg")
-        screen.draw.text(
-            "New Game",
-            center=(WIDTH // 2, 120),
-            fontsize=60,
-            color="white"
-        )
-        for text, rect, surface in self.new_buttons:
-            screen.blit(surface, rect.topleft)
-
-            screen.draw.text(
-                text,
-                center=rect.center,
-                fontsize=30,
-                color="white"
-            )
     def on_mouse_down(self, pos):
         global menu
 
-        for text, rect, surface in self.new_buttons:
+        for text, rect, surface in self.buttons:
             if rect.collidepoint(pos):
                 if text == "Back":
                     menu = Menu()
-                else:
-                    print(f"Selected difficulty: {text}")
+                elif text in ["Easy", "Medium", "Hard"]:
+                    print(f"Starting new game on {text} difficulty...")
 
-class ContinueGame:
+#Szene Spiel fortsetzen
+class ContinueGame(MenuSzene):
     def __init__(self):
-        pass
+        super().__init__("continue_items", "continue_buttons", "bg_continue.jpg", "Continue Game")
 
-    def draw(self):
-        bliting_bg("bg_continue.jpg")
+    def on_mouse_down(self, pos):
+        global menu
 
-class Settings:
+        for text, rect, surface in self.buttons:
+            if rect.collidepoint(pos):
+                if text == "Back":
+                    menu = Menu()
+                elif text.startswith("Save"):
+                    print(f"Continuing game from {text}...")
+
+#Szene Einstellungen
+class Settings(MenuSzene):
     def __init__(self):
-        pass
+        super().__init__("settings_items", "settings_buttons", "bg_settings.jpg", "Settings")
 
-    def draw(self):
-        bliting_bg("bg_settings.jpg")
+    def on_mouse_down(self, pos):
+        global menu
 
-class Credits:
+        for text, rect, surface in self.buttons:
+            if rect.collidepoint(pos):
+                if text == "Back":
+                    menu = Menu()
+                elif text == "Audio":
+                    print("Adjusting audio settings...")
+                elif text == "Video":
+                    print("Adjusting video settings...")
+                elif text == "Controls":
+                    print("Adjusting control settings...")
+
+#Szene Credits [ Me ;) ]
+class Credits(MenuSzene):
     def __init__(self):
-        pass
+        super().__init__("credits_items", "credits_buttons", "bg_menu.jpg", "Credits")
+    
+    def on_mouse_down(self, pos):
+        global menu
 
-    def draw(self):
-        bliting_bg("bg_menu.jpg")
+        for text, rect, surface in self.buttons:
+            if rect.collidepoint(pos):
+                if text == "Back":
+                    menu = Menu()
+
 #-------------------------------------------
 #Hintergrund laden und skalieren
 backgrounds = {}
@@ -151,24 +161,27 @@ for filename in os.listdir("images"):
 
         backgrounds[filename] = bg
 
-
-#-------------------------------------------
 #Funktion die automatisch die Hintergrundbilder aus der Liste zentriert auf den Bildschirm blitet
 def bliting_bg(img: str):
     bg = backgrounds[img]
     screen.blit(bg, ((WIDTH-bg.get_width()) // 2, (HEIGHT-bg.get_height()) // 2))
 
+#setzt die buttonkollision für die szenen um
+def on_mouse_down(pos):
+    menu.on_mouse_down(pos)
+
+#-------------------------------------------
+#Startet mit dem Hauptmenü
 menu = Menu()
 
+#initiale draw funktion die die aktuelle Szene zeichnet
 def draw():
     screen.clear()
     menu.draw()
 
-def on_mouse_down(pos):
-    menu.on_mouse_down(pos)
-
+#frames
 def update():
     pass
 
-
+#go
 pgzrun.go()
