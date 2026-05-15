@@ -21,6 +21,8 @@ menuLibrary = {"menu_items": ["Start New Game", "Continue Game", "Settings", "Cr
 
 
 class SceneManager():
+    dauer_bewegung = 120
+    dauer_ruhen = 10
     def __init__(self, start_scene):
         self.scene = start_scene
         self.scene.on_enter()
@@ -52,7 +54,10 @@ class SceneManager():
         # PHASE 1: CLOSE
         # --------------------
         if self.phase == 1:
-            if self.t >= 60: # >= damit bei einem overshoot durch eine speed die nicht perfekt passt trozdem stoppt
+            if self.t == 1:
+                door_sound.stop()
+                door_sound.play()
+            if self.t >= self.dauer_bewegung: # >= damit bei einem overshoot durch eine speed die nicht perfekt passt trozdem stoppt
                 if hasattr(self.scene, "on_exit"):
                     self.scene.on_exit()
 
@@ -66,7 +71,9 @@ class SceneManager():
         # PHASE 2: HOLD (geschlossen)
         # --------------------
         elif self.phase == 2:
-            if self.t >= 20:   # <- dauer die gewartet wird bevor die türen wieder aufgehen
+            if self.t == self.dauer_ruhen //2:
+                door_sound.stop()
+            if self.t >= self.dauer_ruhen:   # <- dauer die gewartet wird bevor die türen wieder aufgehen
                 self.phase = 3
                 self.t = 0
 
@@ -74,7 +81,9 @@ class SceneManager():
         # PHASE 3: OPEN
         # --------------------
         elif self.phase == 3:
-            if self.t >= 60:
+            if self.t == 1:
+                door_sound.play()
+            if self.t >= self.dauer_bewegung:
                 self.transitioning = False # transition ist vorbei
                 self.phase = 0
                 self.t = 0
@@ -370,6 +379,9 @@ def scale_to_half_height_full_width(img):
 
 door_top = scale_to_half_height_full_width(door_top)
 door_bottom = scale_to_half_height_full_width(door_bottom)
+
+door_sound = pygame.mixer.Sound("sounds/door_open_close.wav")
+door_sound.set_volume(0.5)
 
 #Funktion die automatisch die Hintergrundbilder aus der Liste zentriert auf den Bildschirm blitet
 def bliting_bg(img: str):
