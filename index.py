@@ -2,6 +2,9 @@ import pgzrun
 import pygame
 import os
 
+# öffnet das verfluchte Fenster zentriert, warum auch immer das nicht automatisch passiert
+os.environ['SDL_VIDEO_CENTERED'] = '1'
+
 #Parameter
 WIDTH  = 1200
 HEIGHT = 800
