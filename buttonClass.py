@@ -16,89 +16,6 @@ menuLibrary = {"menu_items": ["Start New Game", "Continue Game", "Settings", "Cr
                "settings_items": ["Back", "Audio", "Video", "Controls"],
                "credits_items": ["Back"]}
 
-
-class Button:
-    def __init__(self, text, center):
-        #inhalt
-        self.text = text
-
-        #position und größe
-        self.width = 300
-        self.height = 50
-        self.rect = pygame.Rect(0, 0, self.width, self.height)
-        self.rect.center = center
-
-        # Animationen
-        #-> transparenz des buttons
-        self.alpha = 140
-        self.target_alpha = 140
-
-        #-> transparenz des glows
-        self.glow_alpha = 0
-        self.target_glow = 0
-
-        #-> vertikale verschiebung des buttons
-        self.offset_y = 0
-        self.target_offset_y = 0
-
-    def update(self):
-        mouse_pos = pygame.mouse.get_pos()
-
-        hovered = self.rect.collidepoint(mouse_pos)
-
-        if hovered:
-            self.target_alpha = 220
-            self.target_glow = 180
-            self.target_offset_y = -3
-        else:
-            self.target_alpha = 140
-            self.target_glow = 0
-            self.target_offset_y = 0
-
-        speed = 0.12
-
-        self.alpha += (self.target_alpha - self.alpha) * speed
-        self.glow_alpha += (self.target_glow - self.glow_alpha) * speed
-        self.offset_y += (self.target_offset_y - self.offset_y) * speed
-
-    def draw(self):
-        x = self.rect.x
-        y = self.rect.y + self.offset_y
-
-        width = self.width
-        height = self.height
-
-        #button
-        button_surface = pygame.Surface((width, height), pygame.SRCALPHA)
-
-        pygame.draw.rect(
-            button_surface,
-            (25, 35, 70, int(self.alpha)),
-            (0, 0, width, height),
-            border_radius=15
-        )
-
-        # Outline
-        pygame.draw.rect(
-            button_surface,
-            (120, 170, 255, min(int(self.glow_alpha), 120)),
-            (0, 0, width, height),
-            width=4,
-            border_radius=15
-        )
-        screen.blit(button_surface, (x, y))
-
-        #text
-        screen.draw.text(
-            self.text,
-            center=(self.rect.centerx, self.rect.centery + self.offset_y),
-            fontsize=30,
-            color="white"
-        )
-
-    def clicked(self, pos):
-        return self.rect.collidepoint(pos)
-
 #-------------------------------------------
 #Parent Classe Für die Menü Szenen
 class MenuSzene():
@@ -120,12 +37,7 @@ class MenuSzene():
             surface = pygame.Surface((300, 50), pygame.SRCALPHA)
             pygame.draw.rect(surface, (0, 0, 255, 100), (0, 0, 300, 50), border_radius=15)
 
-            button = Button(
-                text,
-                (WIDTH // 2, start_y + i * 70)
-            )
-
-            self.buttons.append(button)
+            self.buttons.append((text, rect, surface))
 
     def draw(self):
         bliting_bg(self.draw_bg)
@@ -138,8 +50,15 @@ class MenuSzene():
             ocolor="red"
         )
 
-        for button in self.buttons:
-            button.draw()
+        for text, rect, surface in self.buttons:
+            screen.blit(surface, rect.topleft)
+
+            screen.draw.text(
+                text,
+                center=rect.center,
+                fontsize=30,
+                color="white"
+            )
 
         if self.text != "":
             lines = self.text.split('\n')
@@ -154,9 +73,6 @@ class MenuSzene():
                     owidth=2.5,
                     ocolor="black"
                 )
-    def update(self):
-        for button in self.buttons:
-            button.update()
     
 #Szene Hauptmenü
 class Menu(MenuSzene):
@@ -166,17 +82,17 @@ class Menu(MenuSzene):
     def on_mouse_down(self, pos):
         global menu
 
-        for button in self.buttons:
-            if button.clicked(pos):
-                if button.text == "Start New Game":
+        for text, rect, surface in self.buttons:
+            if rect.collidepoint(pos):
+                if text == "Start New Game":
                     menu = NewGame()
-                elif button.text == "Continue Game":
+                elif text == "Continue Game":
                     menu = ContinueGame()
-                elif button.text == "Settings":
+                elif text == "Settings":
                     menu = Settings()
-                elif button.text == "Credits":
+                elif text == "Credits":
                     menu = Credits()
-                elif button.text == "Quit":
+                elif text == "Quit":
                     pygame.quit()
                     exit()
 
@@ -188,12 +104,12 @@ class NewGame(MenuSzene):
     def on_mouse_down(self, pos):
         global menu
 
-        for button in self.buttons:
-            if button.clicked(pos):
-                if button.text == "Back":
+        for text, rect, surface in self.buttons:
+            if rect.collidepoint(pos):
+                if text == "Back":
                     menu = Menu()
-                elif button.text in ["Easy", "Medium", "Hard"]:
-                    print(f"Starting new game on {button.text} difficulty...")
+                elif text in ["Easy", "Medium", "Hard"]:
+                    print(f"Starting new game on {text} difficulty...")
 
 #Szene Spiel fortsetzen
 class ContinueGame(MenuSzene):
@@ -203,12 +119,12 @@ class ContinueGame(MenuSzene):
     def on_mouse_down(self, pos):
         global menu
 
-        for button in self.buttons:
-             if button.clicked(pos):
-                if button.text == "Back":
+        for text, rect, surface in self.buttons:
+            if rect.collidepoint(pos):
+                if text == "Back":
                     menu = Menu()
-                elif button.text.startswith("Save"):
-                    print(f"Continuing game from {button.text}...")
+                elif text.startswith("Save"):
+                    print(f"Continuing game from {text}...")
 
 #Szene Einstellungen
 class Settings(MenuSzene):
@@ -218,15 +134,15 @@ class Settings(MenuSzene):
     def on_mouse_down(self, pos):
         global menu
 
-        for button in self.buttons:
-             if button.clicked(pos):
-                if button.text == "Back":
+        for text, rect, surface in self.buttons:
+            if rect.collidepoint(pos):
+                if text == "Back":
                     menu = Menu()
-                elif button.text == "Audio":
+                elif text == "Audio":
                     print("Adjusting audio settings...")
-                elif button.text == "Video":
+                elif text == "Video":
                     print("Adjusting video settings...")
-                elif button.text == "Controls":
+                elif text == "Controls":
                     print("Adjusting control settings...")
 
 #Szene Credits [ Me ;) ]
@@ -237,9 +153,9 @@ class Credits(MenuSzene):
     def on_mouse_down(self, pos):
         global menu
 
-        for button in self.buttons:
-             if button.clicked(pos):
-                if button.text == "Back":
+        for text, rect, surface in self.buttons:
+            if rect.collidepoint(pos):
+                if text == "Back":
                     menu = Menu()
 
 #-------------------------------------------
@@ -284,7 +200,7 @@ def draw():
 
 #frames
 def update():
-    menu.update()
+    pass
 
 #go
 pgzrun.go()
