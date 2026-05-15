@@ -15,7 +15,7 @@ creditMsg = "Game developed by:\nShahin Youssef Baydoun\n Moralische Unterstütz
 #Buttons im Menübereich
 menuLibrary = {"menu_items": ["Start New Game", "Continue Game", "Settings", "Credits", "Quit"],
                "new_items": ["Back", "Easy", "Medium", "Hard"],
-               "continue_items": ["Back", "Save 1", "Save 2", "Save 3"],
+               "continue_items": ["Back", "Save 1", "Save 2", "Save 3", "Save 4", "Save 5", "Save 6", "Save 7", "Save 8", "Save 9", "Save 10"], # benötigt scroll fix !!!!!!
                "settings_items": ["Back", "Audio", "Video", "Controls"],
                "credits_items": ["Back"]}
 
@@ -348,6 +348,22 @@ class Credits(MenuSzene):
              if button.clicked(pos):
                 if button.text == "Back":
                     manager.change_scene(Menu())
+
+
+
+class GameScene():
+    def __init__(self):
+        pass
+
+class GameHomeBase(GameScene):
+    def __init__(self):
+        super().__init__()
+
+class GameSketch(GameScene):
+    def __init__(self):
+        super().__init__()
+
+
 
 #-------------------------------------------
 #Hintergrund laden und skalieren
