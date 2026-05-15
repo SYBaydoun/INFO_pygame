@@ -17,6 +17,25 @@ menuLibrary = {"menu_items": ["Start New Game", "Continue Game", "Settings", "Cr
                "credits_items": ["Back"]}
 
 
+class SceneManager:
+    def __init__(self, start_scene):
+        self.scene = start_scene
+
+    def set_scene(self, new_scene):
+        self.scene = new_scene
+
+    def update(self):
+        if hasattr(self.scene, "update"):
+            self.scene.update()
+
+    def draw(self):
+        if hasattr(self.scene, "draw"):
+            self.scene.draw()
+
+    def on_mouse_down(self, pos):
+        if hasattr(self.scene, "on_mouse_down"):
+            self.scene.on_mouse_down(pos)
+
 class Button:
     def __init__(self, text, center):
         #inhalt
@@ -164,18 +183,16 @@ class Menu(MenuSzene):
         super().__init__("menu_items", "menu_buttons", "bg_menu.jpg", TITLE)
     
     def on_mouse_down(self, pos):
-        global menu
-
         for button in self.buttons:
             if button.clicked(pos):
                 if button.text == "Start New Game":
-                    menu = NewGame()
+                    manager.set_scene(NewGame())
                 elif button.text == "Continue Game":
-                    menu = ContinueGame()
+                    manager.set_scene(ContinueGame())
                 elif button.text == "Settings":
-                    menu = Settings()
+                    manager.set_scene(Settings())
                 elif button.text == "Credits":
-                    menu = Credits()
+                    manager.set_scene(Credits())
                 elif button.text == "Quit":
                     pygame.quit()
                     exit()
@@ -186,12 +203,10 @@ class NewGame(MenuSzene):
         super().__init__("new_items", "new_buttons", "bg_new.jpg", "Start New Game")
     
     def on_mouse_down(self, pos):
-        global menu
-
         for button in self.buttons:
             if button.clicked(pos):
                 if button.text == "Back":
-                    menu = Menu()
+                    manager.set_scene(Menu())
                 elif button.text in ["Easy", "Medium", "Hard"]:
                     print(f"Starting new game on {button.text} difficulty...")
 
@@ -201,12 +216,10 @@ class ContinueGame(MenuSzene):
         super().__init__("continue_items", "continue_buttons", "bg_continue.jpg", "Continue Game")
 
     def on_mouse_down(self, pos):
-        global menu
-
         for button in self.buttons:
              if button.clicked(pos):
                 if button.text == "Back":
-                    menu = Menu()
+                    manager.set_scene(Menu())
                 elif button.text.startswith("Save"):
                     print(f"Continuing game from {button.text}...")
 
@@ -216,12 +229,10 @@ class Settings(MenuSzene):
         super().__init__("settings_items", "settings_buttons", "bg_settings.jpg", "Settings")
 
     def on_mouse_down(self, pos):
-        global menu
-
         for button in self.buttons:
              if button.clicked(pos):
                 if button.text == "Back":
-                    menu = Menu()
+                    manager.set_scene(Menu())
                 elif button.text == "Audio":
                     print("Adjusting audio settings...")
                 elif button.text == "Video":
@@ -235,12 +246,10 @@ class Credits(MenuSzene):
         super().__init__("credits_items", "credits_buttons", "bg_menu.jpg", "Credits", creditMsg)
     
     def on_mouse_down(self, pos):
-        global menu
-
         for button in self.buttons:
              if button.clicked(pos):
                 if button.text == "Back":
-                    menu = Menu()
+                    manager.set_scene(Menu())
 
 #-------------------------------------------
 #Hintergrund laden und skalieren
@@ -271,20 +280,21 @@ def bliting_bg(img: str):
 
 #setzt die buttonkollision für die szenen um
 def on_mouse_down(pos):
-    menu.on_mouse_down(pos)
+    manager.on_mouse_down(pos)
 
 #-------------------------------------------
 #Startet mit dem Hauptmenü
-menu = Menu()
+manager = None
+manager = SceneManager(Menu())
 
 #initiale draw funktion die die aktuelle Szene zeichnet
 def draw():
     screen.clear()
-    menu.draw()
+    manager.draw()
 
 #frames
 def update():
-    menu.update()
+    manager.update()
 
 #go
 pgzrun.go()
