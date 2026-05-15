@@ -17,26 +17,106 @@ menuLibrary = {"menu_items": ["Start New Game", "Continue Game", "Settings", "Cr
                "credits_items": ["Back"]}
 
 
-class SceneManager:
+class SceneManager():
     def __init__(self, start_scene):
         self.scene = start_scene
+        self.scene.on_enter()
 
-    def set_scene(self, new_scene):
-        self.scene = new_scene
+        self.transitioning = False
+        self.phase = 0  # 0 idle, 1 close, 2 hold, 3 open
+
+        self.next_scene = None
+        self.t = 0
+        self.speed = 1
+
+    def change_scene(self, new_scene):
+        if self.transitioning:
+            return
+
+        self.transitioning = True
+        self.next_scene = new_scene
+        self.phase = 1
+        self.t = 0
 
     def update(self):
-        if hasattr(self.scene, "update"):
+        if not self.transitioning:
             self.scene.update()
+            return
+
+        self.t += self.speed
+
+        # --------------------
+        # PHASE 1: CLOSE
+        # --------------------
+        if self.phase == 1:
+            if self.t >= 60: # >= damit bei einem overshoot durch eine speed die nicht perfekt passt trozdem stoppt
+                if hasattr(self.scene, "on_exit"):
+                    self.scene.on_exit()
+
+                self.scene = self.next_scene
+                self.scene.on_enter()
+
+                self.phase = 2 # <- neue Phase
+                self.t = 0 # <- immerwieder zurücksetzen für nächsten Phaseniteration
+
+        # --------------------
+        # PHASE 2: HOLD (geschlossen)
+        # --------------------
+        elif self.phase == 2:
+            if self.t >= 20:   # <- dauer die gewartet wird bevor die türen wieder aufgehen
+                self.phase = 3
+                self.t = 0
+
+        # --------------------
+        # PHASE 3: OPEN
+        # --------------------
+        elif self.phase == 3:
+            if self.t >= 60:
+                self.transitioning = False # transition ist vorbei
+                self.phase = 0
+                self.t = 0
 
     def draw(self):
-        if hasattr(self.scene, "draw"):
-            self.scene.draw()
+        self.scene.draw()
+
+        if self.transitioning:
+            self.draw_doors()
 
     def on_mouse_down(self, pos):
+        if self.transitioning:
+            return
+
         if hasattr(self.scene, "on_mouse_down"):
             self.scene.on_mouse_down(pos)
 
-class Button:
+    def draw_doors(self):
+        duration = 60
+
+        # CLOSE animation
+        if self.phase == 1:
+            progress = min(self.t / duration, 1)
+
+        # HOLD (fully closed)
+        elif self.phase == 2:
+            progress = 1
+
+        # OPEN animation
+        else:  # phase 3
+            progress = 1 - min(self.t / duration, 1)
+
+        # smoothstep
+        progress = progress * progress * (3 - 2 * progress)
+
+        top_h = door_top.get_height()
+        bottom_h = door_bottom.get_height()
+
+        top_y = -top_h + top_h * progress
+        bottom_y = HEIGHT - bottom_h * progress
+
+        screen.blit(door_top, (0, top_y))
+        screen.blit(door_bottom, (0, bottom_y))
+
+class Button():
     def __init__(self, text, center):
         #inhalt
         self.text = text
@@ -177,6 +257,12 @@ class MenuSzene():
         for button in self.buttons:
             button.update()
     
+    def on_enter(self):
+        pass
+
+    def on_exit(self):
+        pass
+    
 #Szene Hauptmenü
 class Menu(MenuSzene):
     def __init__(self):
@@ -186,13 +272,13 @@ class Menu(MenuSzene):
         for button in self.buttons:
             if button.clicked(pos):
                 if button.text == "Start New Game":
-                    manager.set_scene(NewGame())
+                    manager.change_scene(NewGame())
                 elif button.text == "Continue Game":
-                    manager.set_scene(ContinueGame())
+                    manager.change_scene(ContinueGame())
                 elif button.text == "Settings":
-                    manager.set_scene(Settings())
+                    manager.change_scene(Settings())
                 elif button.text == "Credits":
-                    manager.set_scene(Credits())
+                    manager.change_scene(Credits())
                 elif button.text == "Quit":
                     pygame.quit()
                     exit()
@@ -206,7 +292,7 @@ class NewGame(MenuSzene):
         for button in self.buttons:
             if button.clicked(pos):
                 if button.text == "Back":
-                    manager.set_scene(Menu())
+                    manager.change_scene(Menu())
                 elif button.text in ["Easy", "Medium", "Hard"]:
                     print(f"Starting new game on {button.text} difficulty...")
 
@@ -219,7 +305,7 @@ class ContinueGame(MenuSzene):
         for button in self.buttons:
              if button.clicked(pos):
                 if button.text == "Back":
-                    manager.set_scene(Menu())
+                    manager.change_scene(Menu())
                 elif button.text.startswith("Save"):
                     print(f"Continuing game from {button.text}...")
 
@@ -232,7 +318,7 @@ class Settings(MenuSzene):
         for button in self.buttons:
              if button.clicked(pos):
                 if button.text == "Back":
-                    manager.set_scene(Menu())
+                    manager.change_scene(Menu())
                 elif button.text == "Audio":
                     print("Adjusting audio settings...")
                 elif button.text == "Video":
@@ -249,7 +335,7 @@ class Credits(MenuSzene):
         for button in self.buttons:
              if button.clicked(pos):
                 if button.text == "Back":
-                    manager.set_scene(Menu())
+                    manager.change_scene(Menu())
 
 #-------------------------------------------
 #Hintergrund laden und skalieren
@@ -272,6 +358,15 @@ for filename in os.listdir("images"):
         bg = pygame.transform.smoothscale(bg, (new_width, new_height))
 
         backgrounds[filename] = bg
+
+door_top = pygame.image.load("images/door_top.png")
+door_bottom = pygame.image.load("images/door_bottom.png")
+
+def scale_to_half_height_full_width(img):
+    return pygame.transform.smoothscale(img, (WIDTH, HEIGHT // 2))
+
+door_top = scale_to_half_height_full_width(door_top)
+door_bottom = scale_to_half_height_full_width(door_bottom)
 
 #Funktion die automatisch die Hintergrundbilder aus der Liste zentriert auf den Bildschirm blitet
 def bliting_bg(img: str):
