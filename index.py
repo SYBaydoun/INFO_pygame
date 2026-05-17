@@ -246,7 +246,7 @@ class MenuSzene():
             fontsize=60,
             color="white",
             owidth=3,
-            ocolor="red"
+            ocolor="#ff7300"
         )
 
         for button in self.buttons:
@@ -352,8 +352,11 @@ class Credits(MenuSzene):
 
 
 class GameScene():
-    def __init__(self):
-        pass
+    def __init__(self, draw_bg:str):
+        self.draw_bg = draw_bg
+    
+    def draw(self):
+        bliting_bg(self.draw_bg)
 
 class GameHomeBase(GameScene):
     def __init__(self):
@@ -361,7 +364,7 @@ class GameHomeBase(GameScene):
 
 class GameSketch(GameScene):
     def __init__(self):
-        super().__init__()
+        super().__init__("bg_blueprint.jpg")
 
 
 
