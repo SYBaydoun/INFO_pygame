@@ -1,3 +1,5 @@
+from opensimplex import OpenSimplex
+import random
 import pgzrun
 import pygame
 import os
@@ -20,6 +22,38 @@ menuLibrary = {"menu_items": ["Start New Game", "Continue Game", "Settings", "Cr
                "settings_items": ["Back", "Audio", "Video", "Controls"],
                "credits_items": ["Back"]
                }
+
+
+MAP_SIZE = 10
+icon_size = (24, 24)
+TILE_WIDTH = 128
+TILE_HEIGHT = 64
+
+OFFSET_X = WIDTH // 2
+OFFSET_Y = 600
+
+HEIGHT_STEP = 52
+
+camera_x = 0
+camera_y = 0
+speed = 0.1
+
+ui_x = 40
+ui_y = HEIGHT - 50
+spacing = 240
+
+noise = OpenSimplex(random.randint(0, 1_000_000))
+
+tilemap = [
+    [0 for x in range(MAP_SIZE)] for y in range(MAP_SIZE)
+]
+
+tiles = {
+    0: "surface_bottom",
+    1: "surface_light",
+    2: "surface_medium",
+    3: "surface_dark",
+}
 
 class SceneManager():
     dauer_bewegung = 120
@@ -211,6 +245,35 @@ class Button():
     def clicked(self, pos):
         return self.rect.collidepoint(pos)
 
+class Icon:
+    def __init__(self, source, position, size=icon_size, bg_color=(20, 20, 35), border_color=(80, 80, 120)):
+        if isinstance(source, str):
+            source = images.load(source)
+        self.image = pygame.transform.scale(source, size)
+        self.position = position
+        self.size = size
+        self.bg_color = bg_color
+        self.border_color = border_color
+
+    def draw(self):
+        x, y = self.position
+        radius = self.size[0] // 2 + 6
+
+        screen.draw.filled_circle((x, y), radius, self.bg_color)
+        screen.draw.circle((x, y), self.size[0] // 2 + 4, self.border_color)
+        screen.surface.blit(
+            self.image,
+            (x - self.size[0] // 2, y - self.size[1] // 2)
+        )
+
+    def set_position(self, position):
+        self.position = position
+
+    def move(self, dx, dy):
+        x, y = self.position
+        self.position = (x + dx, y + dy)
+
+
 #-------------------------------------------
 #Parent Classe Für die Menü Szenen
 class MenuSzene():
@@ -364,35 +427,83 @@ class Credits(MenuSzene):
                     manager.change_scene(Menu())
 
 
+# ---------------------------------------------------
+# BASIS GAME SCENE
+# ---------------------------------------------------
+def load_save(path):
+
+    with open(path, "r", encoding="utf-8") as file:
+        return json.load(file)
 
 class GameScene():
-    def __init__(self):
+
+    def __init__(self, save_path):
+
+        # ------------------------------------------------
+        # SAVE PATH (MUSS EXISTIEREN)
+        # ------------------------------------------------
+        self.save_path = save_path
+
+        if not self.save_path:
+            raise ValueError("GameScene requires a valid save_path")
+
+        # ------------------------------------------------
+        # LOAD SAVE (FAIL FAST)
+        # ------------------------------------------------
+        state = load_save(self.save_path)
+
         self.resources = {
-            "electricity": {"current": 70, "max": 100},
-            "metal": {"current": 40, "max": 100},
-            "minerals": {"current": 85, "max": 100},
-            "water": {"current": 20, "max": 100},
-            "communication": {"current": 55, "max": 100},
+            "electricity": {
+                "current": state["resources"]["electricity"],
+                "max": state["resource_max"]["electricity"]
+            },
+
+            "metal": {
+                "current": state["resources"]["metal"],
+                "max": state["resource_max"]["metal"]
+            },
+
+            "minerals": {
+                "current": state["resources"]["minerals"],
+                "max": state["resource_max"]["minerals"]
+            },
+
+            "water": {
+                "current": state["resources"]["water"],
+                "max": state["resource_max"]["water"]
+            },
+
+            "communication": {
+                "current": state["resources"]["communication"],
+                "max": state["resource_max"]["communication"]
+            }
         }
-        self.money = 123456
-        self.science = 67890
-        
-        # UI constants
+
+        self.money = state["resources"]["money"]
+        self.science = state["resources"]["science"]
+
+        # ------------------------------------------------
+        # UI STATE
+        # ------------------------------------------------
         self.ui_y = HEIGHT - 50
-        self.ui_spacing = 240
-        
-        # Icons
+
+        # ------------------------------------------------
+        # ICONS
+        # ------------------------------------------------
         self.resource_icons = {
-            "electricity": chati_isometric.resource_icons["electricity"],
-            "metal": chati_isometric.resource_icons["metal"],
-            "minerals": chati_isometric.resource_icons["minerals"],
-            "water": chati_isometric.resource_icons["water"],
-            "communication": chati_isometric.resource_icons["communication"],
+            "electricity": pygame.transform.scale(images.load("icon_electricity"), icon_size),
+            "metal": pygame.transform.scale(images.load("icon_metal"), icon_size),
+            "minerals": pygame.transform.scale(images.load("icon_minerals"), icon_size),
+            "water": pygame.transform.scale(images.load("icon_water"), icon_size),
+            "communication": pygame.transform.scale(images.load("icon_communication"), icon_size),
         }
-        self.money_icon = chati_isometric.money_icon
-        self.science_icon = chati_isometric.science_icon
-        
-        # Colors
+
+        self.money_icon = pygame.transform.scale(images.load("icon_money"), icon_size)
+        self.science_icon = pygame.transform.scale(images.load("icon_science"), icon_size)
+
+        # ------------------------------------------------
+        # COLORS
+        # ------------------------------------------------
         self.resource_colors = {
             "electricity": (255, 220, 50),
             "metal": (180, 180, 180),
@@ -400,22 +511,26 @@ class GameScene():
             "water": (80, 160, 255),
             "communication": (200, 120, 255),
         }
-    
+
+    # ---------------------------------------------------
+    # UI
+    # ---------------------------------------------------
+
     def draw_resource_bar(self, x, y, resource):
+
         bar_width = 200
         bar_height = 22
         radius = bar_height // 2
 
         current = self.resources[resource]["current"]
         max_v = self.resources[resource]["max"]
-        ratio = current / max_v
+
+        ratio = current / max_v if max_v else 0
 
         bg = (30, 30, 45)
         border = (255, 255, 255)
         fill = self.resource_colors[resource]
-        icon = self.resource_icons[resource]
 
-        # --- BAR BACKGROUND (capsule) ---
         pygame.draw.rect(
             screen.surface,
             bg,
@@ -423,8 +538,8 @@ class GameScene():
             border_radius=radius
         )
 
-        # --- BAR FILL (capsule clipped) ---
         fill_width = int(bar_width * ratio)
+
         pygame.draw.rect(
             screen.surface,
             fill,
@@ -432,7 +547,6 @@ class GameScene():
             border_radius=radius
         )
 
-        # --- BORDER ---
         pygame.draw.rect(
             screen.surface,
             border,
@@ -441,119 +555,209 @@ class GameScene():
             border_radius=radius
         )
 
-        chati_isometric.Icon(icon, (x, y)).draw()
-    
+        Icon(self.resource_icons[resource], (x, y)).draw()
+
+    def draw_resource_bars(self):
+
+        bar_width = 200
+        spacing = 240
+
+        count = len(self.resources)
+        total_width = (count - 1) * spacing + bar_width
+
+        start_x = WIDTH // 2 - total_width // 2
+
+        for i, resource in enumerate(self.resources.keys()):
+            x = start_x + i * spacing
+            self.draw_resource_bar(x, self.ui_y, resource)
+
     def draw_top_stats(self):
+
         spacing = 80
+
         money_text = str(self.money)
         science_text = str(self.science)
+
         font_size = 36
         font = pygame.font.SysFont(None, font_size)
 
         money_width = font.size(money_text)[0]
         science_width = font.size(science_text)[0]
-        icon_w = chati_isometric.icon_size[0]
+        icon_w = icon_size[0]
 
         total_width = money_width + icon_w + spacing + icon_w + science_width
         start_x = WIDTH // 2 - total_width // 2
+
         y = 40
 
-        # Money
+        # MONEY
         screen.draw.text(
             money_text,
             (start_x, y - 18),
             fontsize=font_size,
             color=(255, 220, 80)
         )
-        money_icon_x = start_x + money_width + 20
-        chati_isometric.Icon(self.money_icon, (money_icon_x, y)).draw()
 
-        # Science
+        money_icon_x = start_x + money_width + 20
+        Icon(self.money_icon, (money_icon_x, y)).draw()
+
+        # SCIENCE
         science_icon_x = money_icon_x + spacing
-        chati_isometric.Icon(self.science_icon, (science_icon_x, y)).draw()
+        Icon(self.science_icon, (science_icon_x, y)).draw()
+
         screen.draw.text(
             science_text,
             (science_icon_x + 20, y - 18),
             fontsize=font_size,
             color=(120, 220, 255)
         )
-    
-    def draw_resource_bars(self):
-        count = len(self.resources)
-        bar_width = 200
-        spacing = 240
-        total_width = (count - 1) * spacing + bar_width
-        start_x = WIDTH // 2 - total_width // 2
 
-        for i, resource in enumerate(self.resources.keys()):
-            x = start_x + i * spacing
-            self.draw_resource_bar(x, self.ui_y, resource)
-    
+    def draw_ui(self):
+        self.draw_resource_bars()
+        self.draw_top_stats()
+
     def draw(self):
         pass
-    
+
     def update(self):
         pass
-    
+
     def on_enter(self):
         pass
 
     def on_exit(self):
         pass
-    
+
     def on_mouse_down(self, pos):
         pass
 
+# ---------------------------------------------------
+# HOME BASE
+# ---------------------------------------------------
+
 class GameHomeBase(GameScene):
+
     def __init__(self, save_path=None):
-        super().__init__()
+
+        super().__init__(save_path)
+
+        self.save_path = save_path
+
         self.camera_x = 0
         self.camera_y = 0
+
         self.camera_speed = 0.1
-        self.save_path = save_path
-        
-        # Load save if provided
-        if save_path:
-            try:
-                state = chati_isometric.load_save(save_path)
-                self.resources = {
-                    "electricity": {"current": state["resources"]["electricity"], "max": state["resource_max"]["electricity"]},
-                    "metal": {"current": state["resources"]["metal"], "max": state["resource_max"]["metal"]},
-                    "minerals": {"current": state["resources"]["minerals"], "max": state["resource_max"]["minerals"]},
-                    "water": {"current": state["resources"]["water"], "max": state["resource_max"]["water"]},
-                    "communication": {"current": state["resources"]["communication"], "max": state["resource_max"]["communication"]},
-                }
-                self.money = state["resources"]["money"]
-                self.science = state["resources"]["science"]
-            except:
-                pass
-    
+
+        # -----------------------------------------
+        # TILES
+        # -----------------------------------------
+
+        self.scaled_tiles = {}
+
+        for tile_id, image_name in tiles.items():
+
+            original = images.load(image_name)
+
+            self.scaled_tiles[tile_id] = pygame.transform.scale(
+                original,
+                (128, 128)
+            )
+
+    # ---------------------------------------------------
+    # WORLD
+    # ---------------------------------------------------
+
+    def get_height(self, x, y):
+
+        inside_base = (
+            0 <= x < MAP_SIZE and
+            0 <= y < MAP_SIZE
+        )
+
+        if inside_base:
+            return 0
+
+        n = noise.noise2(x * 0.03, y * 0.03)
+
+        if n < -0.8:
+            target = 0
+        elif n < -0.65:
+            target = 1
+        elif n < -0.4:
+            target = 2
+        else:
+            target = 3
+
+        dx = max(0, x - (MAP_SIZE - 1))
+        dy = max(0, y - (MAP_SIZE - 1))
+
+        dist = max(dx, dy)
+
+        if dist <= 3:
+
+            t = dist / 3
+
+            return int(target * t)
+
+        return target
+
+    def iso_to_screen(self, x, y):
+
+        x -= self.camera_x
+        y -= self.camera_y
+
+        y = -y
+        x = -x
+
+        screen_x = (x - y) * (TILE_WIDTH // 2)
+        screen_y = (x + y) * (TILE_HEIGHT // 2)
+
+        screen_x += OFFSET_X
+        screen_y += OFFSET_Y
+
+        return screen_x, screen_y
+
+    # ---------------------------------------------------
+    # DRAW
+    # ---------------------------------------------------
+
     def draw(self):
+
         screen.fill((40, 40, 60))
 
-        # Draw isometric world
-        for y in reversed(range(int(self.camera_y)-20, int(self.camera_y)+20)):
-            for x in reversed(range(int(self.camera_x)-20, int(self.camera_x)+20)):
+        for y in reversed(range(int(self.camera_y) - 20, int(self.camera_y) + 20)):
+
+            for x in reversed(range(int(self.camera_x) - 20, int(self.camera_x) + 20)):
+
                 if x >= 0 and y >= 0:
-                    h = chati_isometric.get_height(x, y)
-                    base_x, base_y = chati_isometric.iso_to_screen(x, y, self.camera_x, self.camera_y, WIDTH, HEIGHT)
+
+                    h = self.get_height(x, y)
+
+                    base_x, base_y = self.iso_to_screen(x, y)
 
                     for level in range(int(h) + 1):
+
                         screen_x = base_x
-                        screen_y = base_y - level * chati_isometric.HEIGHT_STEP
-                        tile = chati_isometric.scaled_tiles[min(level, 3)]
+                        screen_y = base_y - level * HEIGHT_STEP
+
+                        tile = self.scaled_tiles[min(level, 3)]
+
                         screen.surface.blit(
                             tile,
-                            (screen_x - chati_isometric.TILE_WIDTH // 2,
-                            screen_y - chati_isometric.TILE_HEIGHT // 2)
+                            (
+                                screen_x - TILE_WIDTH // 2,
+                                screen_y - TILE_HEIGHT // 2
+                            )
                         )
 
-        # Draw UI
-        self.draw_resource_bars()
-        self.draw_top_stats()
-    
+        self.draw_ui()
+
+    # ---------------------------------------------------
+    # UPDATE
+    # ---------------------------------------------------
+
     def update(self):
-        # Camera movement
+
         if keyboard.w:
             self.camera_y += self.camera_speed
             self.camera_x += self.camera_speed
@@ -573,35 +777,27 @@ class GameHomeBase(GameScene):
                 self.camera_x -= self.camera_speed
                 self.camera_y += self.camera_speed
 
+
+# ---------------------------------------------------
+# BLUEPRINT / SKETCH SCENE
+# ---------------------------------------------------
+
 class GameSketch(GameScene):
+
     def __init__(self, save_path=None):
-        super().__init__()
+
+        super().__init__(save_path)
+
         self.save_path = save_path
-        
-        # Load save if provided
-        if save_path:
-            try:
-                state = chati_isometric.load_save(save_path)
-                self.resources = {
-                    "electricity": {"current": state["resources"]["electricity"], "max": state["resource_max"]["electricity"]},
-                    "metal": {"current": state["resources"]["metal"], "max": state["resource_max"]["metal"]},
-                    "minerals": {"current": state["resources"]["minerals"], "max": state["resource_max"]["minerals"]},
-                    "water": {"current": state["resources"]["water"], "max": state["resource_max"]["water"]},
-                    "communication": {"current": state["resources"]["communication"], "max": state["resource_max"]["communication"]},
-                }
-                self.money = state["resources"]["money"]
-                self.science = state["resources"]["science"]
-            except:
-                pass
-    
+
     def draw(self):
+
         bliting_bg("bg_blueprint.jpg")
-        self.draw_resource_bars()
-        self.draw_top_stats()
-    
+
+        self.draw_ui()
+
     def update(self):
         pass
-
 
 
 #-------------------------------------------
@@ -654,15 +850,19 @@ def sanitize_filename(name: str) -> str:
     sanitized = sanitized.replace(" ", "_")
     return sanitized[:32]
 
-
-def on_key_down(key):
+    
+def on_key_down(key, mod, unicode):
     scene = manager.scene
     if not getattr(scene, "input", False):
         return
 
-    if key == pygame.K_BACKSPACE: # löscht das letzte zeichen im input feld
+    # BACKSPACE
+    if key == pygame.K_BACKSPACE:
         scene.input_text = scene.input_text[:-1]
-    elif key == pygame.K_RETURN: # eingabe befehl mit enter
+        return
+
+    # ENTER
+    if key == pygame.K_RETURN:
         if isinstance(scene, NewGame): # erstellt json bei new game
             save_name = scene.input_text.strip()
             if save_name:
@@ -707,6 +907,7 @@ def on_key_down(key):
                         json.dump(save_data, save_file, indent=2)
 
                     scene.current_save_path = save_path
+                    manager.change_scene(GameHomeBase(save_path=save_path))
                     print(f"Created save file: {save_path}")
         elif isinstance(scene, ContinueGame): # läd json bei continue game
             save_name = scene.input_text.strip()
@@ -715,20 +916,23 @@ def on_key_down(key):
                 save_path = os.path.join("saved_games", f"{filename}.json")
                 if os.path.exists(save_path):
                     print(f"Continuing game from {save_path}...")
+                    manager.change_scene(GameHomeBase(save_path=save_path))
                 else:
                     print(f"No save file found for: {save_name}")
         else:
             print("Entered:", scene.input_text)
-    elif key == pygame.K_SPACE: # fügt ein Leerzeichen hinzu, solange die maximale Länge von 32 Zeichen nicht überschritten wird
+        return
+
+    # SPACE
+    if key == pygame.K_SPACE:
         if len(scene.input_text) < 32:
             scene.input_text += " "
-    else: # fügt das gedrückte zeichen hinzu, solange es verfügbar ist und die maximale Länge von 32 Zeichen nicht überschritten wird
-        char = pygame.key.name(key)
-        if len(char) == 1 and char.isprintable():
-            if pygame.key.get_mods() & pygame.KMOD_SHIFT:
-                char = char.upper()
-            if len(scene.input_text) < 32:
-                scene.input_text += char
+        return
+
+    # 🔥 HIER KOMMT DAS WICHTIGE
+    if unicode:
+        if len(scene.input_text) < 32:
+            scene.input_text += unicode
 
 #-------------------------------------------
 #Startet mit dem Hauptmenü

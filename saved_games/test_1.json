@@ -3,18 +3,18 @@
   "created": 9383,
   "resources": {
     "electricity": 70,
-    "metal": 40,
+    "metal": 0,
     "minerals": 85,
-    "water": 20,
+    "water": 2,
     "communication": 55,
-    "money": 123456,
+    "money": 1234560000,
     "science": 67890
   },
   "resource_max": {
     "electricity": 100,
     "metal": 100,
     "minerals": 100,
-    "water": 100,
+    "water": 10,
     "communication": 100
   },
   "progress": {}
