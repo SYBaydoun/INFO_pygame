@@ -438,18 +438,11 @@ def load_save(path):
 class GameScene():
 
     def __init__(self, save_path):
-
-        # ------------------------------------------------
-        # SAVE PATH (MUSS EXISTIEREN)
-        # ------------------------------------------------
         self.save_path = save_path
 
         if not self.save_path:
             raise ValueError("GameScene requires a valid save_path")
 
-        # ------------------------------------------------
-        # LOAD SAVE (FAIL FAST)
-        # ------------------------------------------------
         state = load_save(self.save_path)
 
         self.resources = {
@@ -482,14 +475,8 @@ class GameScene():
         self.money = state["resources"]["money"]
         self.science = state["resources"]["science"]
 
-        # ------------------------------------------------
-        # UI STATE
-        # ------------------------------------------------
         self.ui_y = HEIGHT - 50
 
-        # ------------------------------------------------
-        # ICONS
-        # ------------------------------------------------
         self.resource_icons = {
             "electricity": pygame.transform.scale(images.load("icon_electricity"), icon_size),
             "metal": pygame.transform.scale(images.load("icon_metal"), icon_size),
@@ -501,9 +488,7 @@ class GameScene():
         self.money_icon = pygame.transform.scale(images.load("icon_money"), icon_size)
         self.science_icon = pygame.transform.scale(images.load("icon_science"), icon_size)
 
-        # ------------------------------------------------
-        # COLORS
-        # ------------------------------------------------
+
         self.resource_colors = {
             "electricity": (255, 220, 50),
             "metal": (180, 180, 180),
@@ -511,10 +496,6 @@ class GameScene():
             "water": (80, 160, 255),
             "communication": (200, 120, 255),
         }
-
-    # ---------------------------------------------------
-    # UI
-    # ---------------------------------------------------
 
     def draw_resource_bar(self, x, y, resource):
 
@@ -631,10 +612,6 @@ class GameScene():
     def on_mouse_down(self, pos):
         pass
 
-# ---------------------------------------------------
-# HOME BASE
-# ---------------------------------------------------
-
 class GameHomeBase(GameScene):
 
     def __init__(self, save_path=None):
@@ -648,10 +625,6 @@ class GameHomeBase(GameScene):
 
         self.camera_speed = 0.1
 
-        # -----------------------------------------
-        # TILES
-        # -----------------------------------------
-
         self.scaled_tiles = {}
 
         for tile_id, image_name in tiles.items():
@@ -662,10 +635,6 @@ class GameHomeBase(GameScene):
                 original,
                 (128, 128)
             )
-
-    # ---------------------------------------------------
-    # WORLD
-    # ---------------------------------------------------
 
     def get_height(self, x, y):
 
@@ -717,10 +686,6 @@ class GameHomeBase(GameScene):
 
         return screen_x, screen_y
 
-    # ---------------------------------------------------
-    # DRAW
-    # ---------------------------------------------------
-
     def draw(self):
 
         screen.fill((40, 40, 60))
@@ -752,10 +717,6 @@ class GameHomeBase(GameScene):
 
         self.draw_ui()
 
-    # ---------------------------------------------------
-    # UPDATE
-    # ---------------------------------------------------
-
     def update(self):
 
         if keyboard.w:
@@ -776,11 +737,6 @@ class GameHomeBase(GameScene):
             if keyboard.d:
                 self.camera_x -= self.camera_speed
                 self.camera_y += self.camera_speed
-
-
-# ---------------------------------------------------
-# BLUEPRINT / SKETCH SCENE
-# ---------------------------------------------------
 
 class GameSketch(GameScene):
 
@@ -843,7 +799,7 @@ def bliting_bg(img: str):
 def on_mouse_down(pos):
     manager.on_mouse_down(pos)
 
-# input handling for active menu input fields
+# regelt den input von eingabefeld von aktiver scene
 def sanitize_filename(name: str) -> str:
     allowed = set("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_ ")
     sanitized = "".join(ch for ch in name if ch in allowed).strip()
@@ -856,12 +812,10 @@ def on_key_down(key, mod, unicode):
     if not getattr(scene, "input", False):
         return
 
-    # BACKSPACE
     if key == pygame.K_BACKSPACE:
         scene.input_text = scene.input_text[:-1]
         return
 
-    # ENTER
     if key == pygame.K_RETURN:
         if isinstance(scene, NewGame): # erstellt json bei new game
             save_name = scene.input_text.strip()
@@ -923,13 +877,11 @@ def on_key_down(key, mod, unicode):
             print("Entered:", scene.input_text)
         return
 
-    # SPACE
     if key == pygame.K_SPACE:
         if len(scene.input_text) < 32:
             scene.input_text += " "
         return
 
-    # 🔥 HIER KOMMT DAS WICHTIGE
     if unicode:
         if len(scene.input_text) < 32:
             scene.input_text += unicode
