@@ -49,6 +49,34 @@ resources = {
 
 icon_size = (24, 24)
 
+class Icon:
+    def __init__(self, source, position, size=icon_size, bg_color=(20, 20, 35), border_color=(80, 80, 120)):
+        if isinstance(source, str):
+            source = images.load(source)
+        self.image = pygame.transform.scale(source, size)
+        self.position = position
+        self.size = size
+        self.bg_color = bg_color
+        self.border_color = border_color
+
+    def draw(self):
+        x, y = self.position
+        radius = self.size[0] // 2 + 6
+
+        screen.draw.filled_circle((x, y), radius, self.bg_color)
+        screen.draw.circle((x, y), self.size[0] // 2 + 4, self.border_color)
+        screen.surface.blit(
+            self.image,
+            (x - self.size[0] // 2, y - self.size[1] // 2)
+        )
+
+    def set_position(self, position):
+        self.position = position
+
+    def move(self, dx, dy):
+        x, y = self.position
+        self.position = (x + dx, y + dy)
+
 resource_icons = {
     "electricity": pygame.transform.scale(images.load("icon_electricity"), icon_size),
     "metal": pygame.transform.scale(images.load("icon_metal"), icon_size),
@@ -215,17 +243,7 @@ def draw_resource_bar(x, y, resource, data):
         (20, 20, 35)
     )
 
-    screen.draw.circle(
-        (x, y),
-        icon_size[0] // 2 + 4,
-        (80, 80, 120)
-    )
-
-    # icon itself
-    screen.surface.blit(
-        icon,
-        (x - icon_size[0] // 2, y - icon_size[1] // 2)
-    )
+    Icon(icon, (x, y)).draw()
 
 def draw_top_stats():
 
@@ -266,48 +284,12 @@ def draw_top_stats():
 
     money_icon_x = money_text_x + money_width + 20
 
-    screen.draw.filled_circle(
-        (money_icon_x, y),
-        icon_size[0] // 2 + 6,
-        (20, 20, 35)
-    )
-
-    screen.draw.circle(
-        (money_icon_x, y),
-        icon_size[0] // 2 + 4,
-        (80, 80, 120)
-    )
-
-    screen.surface.blit(
-        money_icon,
-        (
-            money_icon_x - icon_size[0] // 2,
-            y - icon_size[1] // 2
-        )
-    )
+    Icon(money_icon, (money_icon_x, y)).draw()
 
     # ---------- SCIENCE ----------
     science_icon_x = money_icon_x + spacing
 
-    screen.draw.filled_circle(
-        (science_icon_x, y),
-        icon_size[0] // 2 + 6,
-        (20, 20, 35)
-    )
-
-    screen.draw.circle(
-        (science_icon_x, y),
-        icon_size[0] // 2 + 4,
-        (80, 80, 120)
-    )
-
-    screen.surface.blit(
-        science_icon,
-        (
-            science_icon_x - icon_size[0] // 2,
-            y - icon_size[1] // 2
-        )
-    )
+    Icon(science_icon, (science_icon_x, y)).draw()
 
     screen.draw.text(
         science_text,
