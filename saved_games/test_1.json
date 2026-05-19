@@ -1,7 +1,7 @@
 {
-  "name": "fabi_1",
-  "created": 9383,
-  "seed": 201539,
+  "name": "test_1",
+  "created": "20260519105741",
+  "seed": 724414,
   "resources": {
     "electricity": 70,
     "metal": 40,

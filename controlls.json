@@ -1,12 +1,13 @@
 {
     "movement": {
-        "up": "W",
-        "down": "S",
-        "left": "A",
-        "right": "D"
+        "up": "w",
+        "down": "s",
+        "left": "a",
+        "right": "d",
+        "boost": "K_SHIFT"
     },
     "extra": {
-        "open_menu": "ESC",
-        "toggle_debug": "F3"
+        "open_menu": "K_ESC",
+        "toggle_debug": "K_F3"
     }
 }

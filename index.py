@@ -4,6 +4,7 @@ import pgzrun
 import pygame
 import os
 import json
+import time
 
 # öffnet das verfluchte Fenster zentriert, warum auch immer das nicht automatisch passiert
 os.environ['SDL_VIDEO_CENTERED'] = '1'
@@ -12,7 +13,7 @@ os.environ['SDL_VIDEO_CENTERED'] = '1'
 WIDTH  = 1200
 HEIGHT = 800
 
-TITLE = "SpaceBusiness"
+TITLE = "FeiniSpaceAgency"
 creditMsg = "Game developed by:\nShahin Youssef Baydoun\n Graphics by:\nShahin Youssef Baydoun\nMoralische Unterstützung:\nAlinchen Bienchen :)\ntest"
 
 #Buttons im Menübereich
@@ -37,6 +38,7 @@ HEIGHT_STEP = 52
 camera_x = 0
 camera_y = 0
 speed = 0.1
+boost = 1
 
 ui_x = 40
 ui_y = HEIGHT - 50
@@ -242,7 +244,11 @@ class Button():
 
     def clicked(self, pos):
         return self.rect.collidepoint(pos)
-
+    
+class ScrollableButtons():
+    def __init__(self):
+        pass
+        
 class Icon:
     def __init__(self, source, position, size=icon_size, bg_color=(20, 20, 35), border_color=(80, 80, 120)):
         if isinstance(source, str):
@@ -310,7 +316,8 @@ class MenuSzene():
             fontsize=60,
             color="white",
             owidth=3,
-            ocolor="#ff7300"
+            ocolor="#ff7300",
+            fontname=menu_font()
         )
 
         for button in self.buttons:
@@ -717,25 +724,28 @@ class GameHomeBase(GameScene):
         self.draw_ui()
 
     def update(self):
-
+        if keyboard.lshift or keyboard.rshift:
+            boost = 3
+        else:
+            boost = 1
         if keyboard.w:
-            self.camera_y += self.camera_speed
-            self.camera_x += self.camera_speed
+            self.camera_y += self.camera_speed * boost
+            self.camera_x += self.camera_speed * boost
 
         if self.camera_x - self.camera_speed >= 0 and self.camera_y - self.camera_speed >= 0:
             if keyboard.s:
-                self.camera_y -= self.camera_speed
-                self.camera_x -= self.camera_speed
+                self.camera_y -= self.camera_speed * boost
+                self.camera_x -= self.camera_speed * boost
 
         if self.camera_y - self.camera_speed >= 0:
             if keyboard.a:
-                self.camera_x += self.camera_speed
-                self.camera_y -= self.camera_speed
+                self.camera_x += self.camera_speed * boost
+                self.camera_y -= self.camera_speed * boost
 
         if self.camera_x - self.camera_speed >= 0:
             if keyboard.d:
-                self.camera_x -= self.camera_speed
-                self.camera_y += self.camera_speed
+                self.camera_x -= self.camera_speed * boost
+                self.camera_y += self.camera_speed * boost
 
 class GameSketch(GameScene):
 
@@ -794,6 +804,11 @@ def bliting_bg(img: str):
     bg = backgrounds[img]
     screen.blit(bg, ((WIDTH-bg.get_width()) // 2, (HEIGHT-bg.get_height()) // 2))
 
+def menu_font() -> str:
+    if isinstance(manager.scene, Menu):
+        return "maturasc"
+    else:
+        return "stencil"
 #setzt die buttonkollision für die szenen um
 def on_mouse_down(pos):
     manager.on_mouse_down(pos)
@@ -833,9 +848,8 @@ def on_key_down(key, mod, unicode):
                     save_folder = "saved_games"
                     os.makedirs(save_folder, exist_ok=True)
                     save_path = os.path.join(save_folder, f"{filename}.json")
-
-                    if os.path.exists(save_path):
-                        counter = 1
+                    counter = 1
+                    if os.path.exists(save_path):  
                         while True:
                             alt_path = os.path.join(save_folder, f"{filename}_{counter}.json")
                             if not os.path.exists(alt_path):
@@ -845,7 +859,7 @@ def on_key_down(key, mod, unicode):
 
                     save_data = {
                     "name": f"{filename}_{counter}",
-                    "created": 9383,
+                    "created": time.strftime("%Y%m%d%H%M%S", time.gmtime()),
                     "seed": noise._seed,
                     "resources": {
                         "electricity": 70,
