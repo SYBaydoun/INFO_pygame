@@ -13,7 +13,7 @@ WIDTH  = 1200
 HEIGHT = 800
 
 TITLE = "SpaceBusiness"
-creditMsg = "Game developed by:\nShahin Youssef Baydoun\n Moralische Unterstützung:\nAlinchen Bienchen :)\ntest"
+creditMsg = "Game developed by:\nShahin Youssef Baydoun\n Graphics by:\nShahin Youssef Baydoun\nMoralische Unterstützung:\nAlinchen Bienchen :)\ntest"
 
 #Buttons im Menübereich
 menuLibrary = {"menu_items": ["Start New Game", "Continue Game", "Settings", "Credits", "Quit"],
