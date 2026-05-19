@@ -42,8 +42,6 @@ ui_x = 40
 ui_y = HEIGHT - 50
 spacing = 240
 
-noise = OpenSimplex(random.randint(0, 1_000_000))
-
 tilemap = [
     [0 for x in range(MAP_SIZE)] for y in range(MAP_SIZE)
 ]
@@ -434,7 +432,7 @@ def load_save(path):
 
     with open(path, "r", encoding="utf-8") as file:
         return json.load(file)
-
+controlls = load_save("controlls.json")
 class GameScene():
 
     def __init__(self, save_path):
@@ -444,6 +442,7 @@ class GameScene():
             raise ValueError("GameScene requires a valid save_path")
 
         state = load_save(self.save_path)
+        self.noise = OpenSimplex(state["seed"])
 
         self.resources = {
             "electricity": {
@@ -646,7 +645,7 @@ class GameHomeBase(GameScene):
         if inside_base:
             return 0
 
-        n = noise.noise2(x * 0.03, y * 0.03)
+        n = self.noise.noise2(x * 0.03, y * 0.03)
 
         if n < -0.8:
             target = 0
@@ -806,10 +805,18 @@ def sanitize_filename(name: str) -> str:
     sanitized = sanitized.replace(" ", "_")
     return sanitized[:32]
 
-    
+
 def on_key_down(key, mod, unicode):
     scene = manager.scene
     if not getattr(scene, "input", False):
+        if key == pygame.K_ESCAPE and isinstance(scene, GameScene):
+            manager.change_scene(Menu())
+        elif key == pygame.K_F3 and isinstance(scene, GameScene):
+            print("noise seed:", scene.noise._seed)
+            if isinstance(scene, GameHomeBase):
+                manager.change_scene(GameSketch(save_path=scene.save_path))
+            else:
+                manager.change_scene(GameHomeBase(save_path=scene.save_path))
         return
 
     if key == pygame.K_BACKSPACE:
@@ -819,6 +826,7 @@ def on_key_down(key, mod, unicode):
     if key == pygame.K_RETURN:
         if isinstance(scene, NewGame): # erstellt json bei new game
             save_name = scene.input_text.strip()
+            noise = OpenSimplex(random.randint(0, 1_000_000))
             if save_name:
                 filename = sanitize_filename(save_name)
                 if filename:
@@ -838,6 +846,7 @@ def on_key_down(key, mod, unicode):
                     save_data = {
                     "name": "test1",
                     "created": 9383,
+                    "seed": noise._seed,
                     "resources": {
                         "electricity": 70,
                         "metal": 40,

@@ -1,6 +1,7 @@
 {
   "name": "test1",
   "created": 9383,
+  "seed": 893212,
   "resources": {
     "electricity": 70,
     "metal": 40,

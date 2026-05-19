@@ -1,0 +1,12 @@
+{
+    "movement": {
+        "up": "W",
+        "down": "S",
+        "left": "A",
+        "right": "D"
+    },
+    "extra": {
+        "open_menu": "ESC",
+        "toggle_debug": "F3"
+    }
+}
