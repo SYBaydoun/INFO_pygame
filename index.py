@@ -844,7 +844,7 @@ def on_key_down(key, mod, unicode):
                             counter += 1
 
                     save_data = {
-                    "name": "test1",
+                    "name": f"{filename}_{counter}",
                     "created": 9383,
                     "seed": noise._seed,
                     "resources": {
