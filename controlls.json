@@ -4,10 +4,24 @@
         "down": "s",
         "left": "a",
         "right": "d",
-        "boost": "K_SHIFT"
+        "boost": ["L_SHIFT", "R_SHIFT"]
     },
     "extra": {
         "open_menu": "K_ESC",
         "toggle_debug": "K_F3"
+    },
+    "mouse_click": {
+        "std_LEFT": "LEFT",
+        "std_MIDDLE": "MIDDLE",
+        "std_RIGHT": "RIGHT",
+        "WHEEL_UP": "WHEEL_UP",
+        "WHEEL_DOWN": "WHEEL_DOWN"
+    },
+    "game_scene_switch": {
+        "fwd": "e",
+        "bck": "q",
+        "base": "1",
+        "sketch": "2",
+        "map": "3"
     }
 }

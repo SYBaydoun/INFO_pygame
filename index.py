@@ -131,6 +131,12 @@ class SceneManager:
         # normale klicks
         if button == mouse.LEFT and hasattr(self.scene, "on_mouse_down"):
             self.scene.on_mouse_down(pos, button)
+        elif button == mouse.MIDDLE and hasattr(self.scene, "on_mouse_middle_down"):
+            self.scene.on_mouse_middle_down(pos, button)
+        elif button == mouse.RIGHT and hasattr(self.scene, "on_button_right_down"):
+            self.scene.on_mouse_right_down(pos, button)
+        else:
+            return
 
     def draw_doors(self):
         duration = 60
