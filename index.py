@@ -24,27 +24,25 @@ menuLibrary = {"menu_items": ["Start New Game", "Continue Game", "Settings", "Cr
                "credits_items": ["Back"]
                }
 
+#mausrat offset
 offset = 0
 
-
+#Game Variables
 MAP_SIZE = 10
 icon_size = (24, 24)
 TILE_WIDTH = 128
 TILE_HEIGHT = 64
 
+#koordinatenursprungs anfangsposition
 OFFSET_X = WIDTH // 2
 OFFSET_Y = 600
 
-HEIGHT_STEP = 52
+HEIGHT_STEP = 52 #<- nicht 64, damit dahinterliegende niedrigere blöcke gesehen werden können
 
 camera_x = 0
 camera_y = 0
 speed = 0.1
 boost = 1
-
-ui_x = 40
-ui_y = HEIGHT - 50
-spacing = 240
 
 tilemap = [
     [0 for x in range(MAP_SIZE)] for y in range(MAP_SIZE)
@@ -57,6 +55,9 @@ tiles = {
     3: "surface_dark",
 }
 
+
+#-------------------------------------------
+#Scenen Manager
 class SceneManager:
     def __init__(self, start_scene):
         self.scene = start_scene
@@ -80,6 +81,9 @@ class SceneManager:
         self.next_scene = new_scene
         self.phase = 1
         self.t = 0
+
+        global offset
+        offset = 0
 
     def update(self):
         if not self.transitioning:
@@ -160,6 +164,10 @@ class SceneManager:
         screen.blit(door_bottom, (0, bottom_y))
 
 
+#-------------------------------------------
+#Inhalte die sich oft wiederholen wie Buttons, Icons, etc.
+
+#Buttons
 class Button():
     def __init__(self, text, center):
         #inhalt
@@ -244,7 +252,8 @@ class Button():
     
     def set_position(self, pos):
         self.rect.center = pos
-    
+
+#Button gruppe die sich scrollen lässt
 class ScrollableButtons:
     def __init__(self):
         self.buttons = []
@@ -290,7 +299,8 @@ class ScrollableButtons:
     def update(self):
         for button in self.buttons:
             button.update()
-        
+
+#Icons
 class Icon:
     def __init__(self, source, position, size=icon_size, bg_color=(20, 20, 35), border_color=(80, 80, 120)):
         if isinstance(source, str):
@@ -321,7 +331,7 @@ class Icon:
 
 
 #-------------------------------------------
-#Parent Classe Für die Menü Szenen
+#Vererbende Class Für die Menü Szenen
 class MenuSzene():
     def __init__(self, items:str, buttons:str, draw_bg:str, title:str, text: str = "", input: bool = False,scrollable: bool = False, scrollableItems: list[str] = []):
         self.items = menuLibrary[items]
@@ -477,7 +487,6 @@ class ContinueGame(MenuSzene):
         if self.scrollable_ui:
             self.scrollable_ui.draw()
 
-
 #Szene Einstellungen
 class Settings(MenuSzene):
     def __init__(self):
@@ -507,14 +516,8 @@ class Credits(MenuSzene):
                     manager.change_scene(Menu())
 
 
-# ---------------------------------------------------
-# BASIS GAME SCENE
-# ---------------------------------------------------
-def load_save(path):
-
-    with open(path, "r", encoding="utf-8") as file:
-        return json.load(file)
-controlls = load_save("controlls.json")
+#-------------------------------------------
+#Vererbende Class Für Game
 class GameScene():
 
     def __init__(self, save_path):
@@ -693,6 +696,7 @@ class GameScene():
     def on_mouse_down(self, pos, button):
         pass
 
+#Scene Game Base
 class GameHomeBase(GameScene):
 
     def __init__(self, save_path=None):
@@ -822,6 +826,7 @@ class GameHomeBase(GameScene):
                 self.camera_x -= self.camera_speed * boost
                 self.camera_y += self.camera_speed * boost
 
+#Scene Game Sketch
 class GameSketch(GameScene):
 
     def __init__(self, save_path=None):
@@ -862,15 +867,18 @@ for filename in os.listdir("images"):
 
         backgrounds[filename] = bg
 
+#Türen für Transition laden
 door_top = pygame.image.load("images/door_top.png")
 door_bottom = pygame.image.load("images/door_bottom.png")
 
+#skaliert die türen auf die fenster größe, dabei so verzert das beide richtungen passen -> deswegen pixelart damit es trozdem gut aussieht
 def scale_to_half_height_full_width(img):
     return pygame.transform.smoothscale(img, (WIDTH, HEIGHT // 2))
 
 door_top = scale_to_half_height_full_width(door_top)
 door_bottom = scale_to_half_height_full_width(door_bottom)
 
+#geräusche der türen
 door_sound = pygame.mixer.Sound("sounds/door_open_close.wav")
 door_sound.set_volume(0.5)
 
@@ -879,12 +887,14 @@ def bliting_bg(img: str):
     bg = backgrounds[img]
     screen.blit(bg, ((WIDTH-bg.get_width()) // 2, (HEIGHT-bg.get_height()) // 2))
 
+#Fonts für die Titel der Menu scenen
 def menu_font() -> str:
     if isinstance(manager.scene, Menu):
         return "maturasc"
     else:
         return "stencil"
     
+#starten eines neuen games
 def new_game_logik(current_scene):
     save_name = current_scene.input_text.strip()
     noise = OpenSimplex(random.randint(0, 1_000_000))
@@ -933,6 +943,7 @@ def new_game_logik(current_scene):
             manager.change_scene(GameHomeBase(save_path=save_path))
             print(f"Created save file: {save_path}")
 
+#fortfahren eines games mit json datei
 def continue_game_logik(current_scene):
     save_name = current_scene.input_text.strip()
     if save_name:
@@ -944,18 +955,25 @@ def continue_game_logik(current_scene):
         else:
             print(f"No save file found for: {save_name}")
 
+#läd json datei automatisch
+def load_save(path):
+    with open(path, "r", encoding="utf-8") as file:
+        return json.load(file)
+controlls = load_save("controlls.json")
+print(controlls)
+print(type(controlls))
 #setzt die buttonkollision für die szenen um
 def on_mouse_down(pos, button):
     manager.on_mouse_down(pos, button)
 
-# regelt den input von eingabefeld von aktiver scene
+#regelt den input von eingabefeld von aktiver scene
 def sanitize_filename(name: str) -> str:
     allowed = set("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_ ")
     sanitized = "".join(ch for ch in name if ch in allowed).strip()
     sanitized = sanitized.replace(" ", "_")
     return sanitized[:32]
 
-
+#regestriert und verarbeitet tastaturinput
 def on_key_down(key, mod, unicode):
     scene = manager.scene
     if not getattr(scene, "input", False):
