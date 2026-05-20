@@ -712,6 +712,8 @@ class GameHomeBase(GameScene):
 
         self.scaled_tiles = {}
 
+        self.controlls = load_save("controlls.json")
+
         for tile_id, image_name in tiles.items():
 
             original = images.load(image_name)
@@ -803,26 +805,26 @@ class GameHomeBase(GameScene):
         self.draw_ui()
 
     def update(self):
-        if keyboard.lshift or keyboard.rshift:
+        if any(getattr(keyboard, key) for key in self.controlls['movement']['boost']):
             boost = 3
         else:
             boost = 1
-        if keyboard.w:
+        if getattr(keyboard, self.controlls['movement']['up']):
             self.camera_y += self.camera_speed * boost
             self.camera_x += self.camera_speed * boost
 
         if self.camera_x - self.camera_speed >= 0 and self.camera_y - self.camera_speed >= 0:
-            if keyboard.s:
+            if getattr(keyboard, self.controlls['movement']['down']):
                 self.camera_y -= self.camera_speed * boost
                 self.camera_x -= self.camera_speed * boost
 
         if self.camera_y - self.camera_speed >= 0:
-            if keyboard.a:
+            if getattr(keyboard, self.controlls['movement']['left']):
                 self.camera_x += self.camera_speed * boost
                 self.camera_y -= self.camera_speed * boost
 
         if self.camera_x - self.camera_speed >= 0:
-            if keyboard.d:
+            if getattr(keyboard, self.controlls['movement']['right']):
                 self.camera_x -= self.camera_speed * boost
                 self.camera_y += self.camera_speed * boost
 
@@ -962,6 +964,11 @@ def load_save(path):
 controlls = load_save("controlls.json")
 print(controlls)
 print(type(controlls))
+print(controlls.get('mouse_click').get('std_LEFT'))
+
+def key_attr(inner_dict: str, item: str, outer_dict: str = controlls) -> str:
+    return getattr(pygame, outer_dict[inner_dict][item])
+
 #setzt die buttonkollision für die szenen um
 def on_mouse_down(pos, button):
     manager.on_mouse_down(pos, button)
@@ -977,9 +984,9 @@ def sanitize_filename(name: str) -> str:
 def on_key_down(key, mod, unicode):
     scene = manager.scene
     if not getattr(scene, "input", False):
-        if key == pygame.K_ESCAPE and isinstance(scene, GameScene):
+        if key == key_attr('extra', 'open_menu') and isinstance(scene, GameScene):
             manager.change_scene(Menu())
-        elif key == pygame.K_F3 and isinstance(scene, GameScene):
+        elif key == key_attr('extra', 'toggle_debug') and isinstance(scene, GameScene):
             print("noise seed:", scene.noise._seed)
             if isinstance(scene, GameHomeBase):
                 manager.change_scene(GameSketch(save_path=scene.save_path))
@@ -987,20 +994,19 @@ def on_key_down(key, mod, unicode):
                 manager.change_scene(GameHomeBase(save_path=scene.save_path))
         return
 
-    if key == pygame.K_BACKSPACE:
+    if key == key_attr('menu', 'input_back') and isinstance(scene, MenuSzene):
         scene.input_text = scene.input_text[:-1]
         return
 
-    if key == pygame.K_RETURN:
+    if key == key_attr('menu', 'input_lock') and isinstance(scene, MenuSzene):
         if isinstance(scene, NewGame): # erstellt json bei new game
             new_game_logik(scene)
         elif isinstance(scene, ContinueGame): # läd json bei continue game
             continue_game_logik(scene)
         else:
             print("Entered:", scene.input_text)
-        return
 
-    if key == pygame.K_SPACE:
+    if key == key_attr('menu', 'input_space'):
         if len(scene.input_text) < 32:
             scene.input_text += " "
         return

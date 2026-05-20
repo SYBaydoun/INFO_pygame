@@ -4,11 +4,16 @@
         "down": "s",
         "left": "a",
         "right": "d",
-        "boost": ["L_SHIFT", "R_SHIFT"]
+        "boost": ["lshift", "rshift"]
     },
     "extra": {
-        "open_menu": "K_ESC",
+        "open_menu": "K_ESCAPE",
         "toggle_debug": "K_F3"
+    },
+    "menu": {
+        "input_back": "K_BACKSPACE",
+        "input_lock": "K_RETURN",
+        "input_space": "K_SPACE"
     },
     "mouse_click": {
         "std_LEFT": "LEFT",
