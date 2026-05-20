@@ -23,5 +23,14 @@
         "base": "1",
         "sketch": "2",
         "map": "3"
+    },
+    "game_base_mechanics": {
+        "place": "p",
+        "left": "j",
+        "up": "i",
+        "right": "l",
+        "down": "k",
+        "rot_left": "u",
+        "rot_right": "o"
     }
 }
