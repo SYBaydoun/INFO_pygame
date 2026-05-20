@@ -846,6 +846,18 @@ class GameSketch(GameScene):
     def update(self):
         pass
 
+#Scene Game Map
+class GameMap(GameScene):
+    def __init__(self, save_path=None):
+        super().__init__(save_path)
+        self.save_path = save_path
+    
+    def draw(self):
+        bliting_bg("bg_settings.jpg")
+        self.draw_ui()
+    
+    def update(self):
+        pass
 
 #-------------------------------------------
 #Hintergrund laden und skalieren
@@ -962,9 +974,6 @@ def load_save(path):
     with open(path, "r", encoding="utf-8") as file:
         return json.load(file)
 controlls = load_save("controlls.json")
-print(controlls)
-print(type(controlls))
-print(controlls.get('mouse_click').get('std_LEFT'))
 
 def key_attr(inner_dict: str, item: str, outer_dict: str = controlls) -> str:
     return getattr(pygame, outer_dict[inner_dict][item])
@@ -983,33 +992,63 @@ def sanitize_filename(name: str) -> str:
 #regestriert und verarbeitet tastaturinput
 def on_key_down(key, mod, unicode):
     scene = manager.scene
-    if not getattr(scene, "input", False):
-        if key == key_attr('extra', 'open_menu') and isinstance(scene, GameScene):
+
+    if isinstance(scene, GameScene):
+        if key == key_attr('extra', 'open_menu'):
             manager.change_scene(Menu())
-        elif key == key_attr('extra', 'toggle_debug') and isinstance(scene, GameScene):
+        elif key == key_attr('extra', 'toggle_debug'):
             print("noise seed:", scene.noise._seed)
             if isinstance(scene, GameHomeBase):
+                print("Koordinaten: ", scene.camera_x, ", ", scene.camera_y)
+        elif key == key_attr('game_scene_switch', 'fwd'):
+            if isinstance(scene, GameHomeBase):
                 manager.change_scene(GameSketch(save_path=scene.save_path))
-            else:
+                print(scene)
+            elif isinstance(scene, GameSketch):
+                manager.change_scene(GameMap(save_path=scene.save_path))
+                print(scene)
+            elif isinstance(scene, GameMap):
                 manager.change_scene(GameHomeBase(save_path=scene.save_path))
+                print(scene)
+        elif key == key_attr('game_scene_switch', 'bck'):
+            if isinstance(scene, GameHomeBase):
+                manager.change_scene(GameMap(save_path=scene.save_path))
+                print(scene)
+            elif isinstance(scene, GameSketch):
+                manager.change_scene(GameHomeBase(save_path=scene.save_path))
+                print(scene)
+            elif isinstance(scene, GameMap):
+                manager.change_scene(GameSketch(save_path=scene.save_path))
+                print(scene)
+        elif key == key_attr('game_scene_switch', 'base') and not isinstance(scene, GameHomeBase):
+            manager.change_scene(GameHomeBase(save_path=scene.save_path))
+        elif key == key_attr('game_scene_switch', 'sketch') and not isinstance(scene, GameSketch):
+            manager.change_scene(GameSketch(save_path=scene.save_path))
+        elif key == key_attr('game_scene_switch', 'map') and not isinstance(scene, GameMap):
+            manager.change_scene(GameMap(save_path=scene.save_path))
+
         return
 
-    if key == key_attr('menu', 'input_back') and isinstance(scene, MenuSzene):
-        scene.input_text = scene.input_text[:-1]
-        return
 
-    if key == key_attr('menu', 'input_lock') and isinstance(scene, MenuSzene):
-        if isinstance(scene, NewGame): # erstellt json bei new game
-            new_game_logik(scene)
-        elif isinstance(scene, ContinueGame): # läd json bei continue game
-            continue_game_logik(scene)
-        else:
-            print("Entered:", scene.input_text)
+    if not getattr(scene, "input", False):
+        pass
+    elif isinstance(scene, MenuSzene):
+        if key == key_attr('menu', 'input_back'):
+            scene.input_text = scene.input_text[:-1]
+            return
 
-    if key == key_attr('menu', 'input_space'):
-        if len(scene.input_text) < 32:
-            scene.input_text += " "
-        return
+        if key == key_attr('menu', 'input_lock'):
+            if isinstance(scene, NewGame): # erstellt json bei new game
+                new_game_logik(scene)
+            elif isinstance(scene, ContinueGame): # läd json bei continue game
+                continue_game_logik(scene)
+            else:
+                print("Entered:", scene.input_text)
+
+            if key == key_attr('menu', 'input_space'):
+                if len(scene.input_text) < 32:
+                    scene.input_text += " "
+                return
 
     if unicode:
         if len(scene.input_text) < 32:

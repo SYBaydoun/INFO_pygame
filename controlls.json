@@ -23,11 +23,11 @@
         "WHEEL_DOWN": "WHEEL_DOWN"
     },
     "game_scene_switch": {
-        "fwd": "e",
-        "bck": "q",
-        "base": "1",
-        "sketch": "2",
-        "map": "3"
+        "fwd": "K_e",
+        "bck": "K_q",
+        "base": "K_1",
+        "sketch": "K_2",
+        "map": "K_3"
     },
     "game_base_mechanics": {
         "place": "p",
