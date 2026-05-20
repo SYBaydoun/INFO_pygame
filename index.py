@@ -123,10 +123,13 @@ class SceneManager:
         if self.transitioning:
             return
 
-        if hasattr(self.scene, "scrollable_ui") and self.scene.scrollable_ui:
-            self.scene.scrollable_ui.handle_scroll(button)
+        # nur scrollrad behandeln
+        if button in (mouse.WHEEL_UP, mouse.WHEEL_DOWN):
+            if hasattr(self.scene, "scrollable_ui") and self.scene.scrollable_ui:
+                self.scene.scrollable_ui.handle_scroll(button)
 
-        if hasattr(self.scene, "on_mouse_down"):
+        # normale klicks
+        if button == mouse.LEFT and hasattr(self.scene, "on_mouse_down"):
             self.scene.on_mouse_down(pos, button)
 
     def draw_doors(self):
