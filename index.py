@@ -39,14 +39,10 @@ OFFSET_Y = 600
 
 HEIGHT_STEP = 52 #<- nicht 64, damit dahinterliegende niedrigere blöcke gesehen werden können
 
-camera_x = 0
-camera_y = 0
-speed = 0.1
-boost = 1
-
 tilemap = [
     [0 for x in range(MAP_SIZE)] for y in range(MAP_SIZE)
 ]
+print(tilemap)
 
 tiles = {
     0: "surface_bottom",
@@ -54,6 +50,7 @@ tiles = {
     2: "surface_medium",
     3: "surface_dark",
 }
+solar = pygame.image.load("images/solar-removebg-preview(1).png")
 
 
 #-------------------------------------------
@@ -699,7 +696,7 @@ class GameScene():
 #Scene Game Base
 class GameHomeBase(GameScene):
 
-    def __init__(self, save_path=None):
+    def __init__(self, save_path: str=None):
 
         super().__init__(save_path)
 
@@ -712,6 +709,8 @@ class GameHomeBase(GameScene):
 
         self.scaled_tiles = {}
 
+        self.solar_scaled = pygame.transform.scale(solar, (128, 128))
+
         self.controlls = load_save("controlls.json")
 
         for tile_id, image_name in tiles.items():
@@ -723,7 +722,7 @@ class GameHomeBase(GameScene):
                 (128, 128)
             )
 
-    def get_height(self, x, y):
+    def get_height(self, x: int, y: int) -> int:
 
         inside_base = (
             0 <= x < MAP_SIZE and
@@ -757,7 +756,7 @@ class GameHomeBase(GameScene):
 
         return target
 
-    def iso_to_screen(self, x, y):
+    def iso_to_screen(self, x: int, y: int) -> float:
 
         x -= self.camera_x
         y -= self.camera_y
@@ -801,6 +800,17 @@ class GameHomeBase(GameScene):
                                 screen_y - TILE_HEIGHT // 2
                             )
                         )
+        for i in range(5, MAP_SIZE):
+            for j in range(2):
+                screen_x, screen_y = self.iso_to_screen(j, i)
+
+                screen.surface.blit(
+                    self.solar_scaled,
+                    (
+                        screen_x - TILE_WIDTH // 2 - 10,
+                        screen_y - TILE_HEIGHT // 2 - 10
+                    )
+                )
 
         self.draw_ui()
 
