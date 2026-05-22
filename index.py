@@ -800,9 +800,13 @@ class GameHomeBase(GameScene):
                                 screen_y - TILE_HEIGHT // 2
                             )
                         )
-        for i in range(5, MAP_SIZE):
-            for j in range(2):
-                screen_x, screen_y = self.iso_to_screen(j, i)
+        
+        eckpunkte = attr_json(self.save_path, "start_modul_pos", "solar")
+        x_min, y_min, x_max, y_max = koordinaten_netz(eckpunkte)
+        
+        for x in range(x_min, x_max):
+            for y in range(y_min, y_max):
+                screen_x, screen_y = self.iso_to_screen(x, y)
 
                 screen.surface.blit(
                     self.solar_scaled,
@@ -979,15 +983,23 @@ def continue_game_logik(current_scene):
         else:
             print(f"No save file found for: {save_name}")
 
-#läd json datei automatisch
+#läd json datei automatisch 
 def load_save(path):
     with open(path, "r", encoding="utf-8") as file:
         return json.load(file)
 controlls = load_save("controlls.json")
 
+#formatiert das attribut für den key vergleich von pygame
 def key_attr(inner_dict: str, item: str, outer_dict: str = controlls) -> str:
     return getattr(pygame, outer_dict[inner_dict][item])
 
+#ruft daten aus json datei ab nicht spezifisch für controll datei
+def attr_json(file: str, inner_dict: str, item: str) -> int | str | list[int | str | list]:
+    outer_dict = load_save(file)
+    return outer_dict[inner_dict][item]
+
+def koordinaten_netz(eckpunkte: list) -> list:
+    return eckpunkte[0][0], eckpunkte[0][1], eckpunkte[1][0], eckpunkte[1][1]
 #setzt die buttonkollision für die szenen um
 def on_mouse_down(pos, button):
     manager.on_mouse_down(pos, button)

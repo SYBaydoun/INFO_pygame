@@ -18,5 +18,8 @@
     "water": 100,
     "communication": 100
   },
+  "start_modul_pos": {
+    "solar": [[0,5], [3,10]]
+  }, 
   "progress": {}
 }
