@@ -308,7 +308,7 @@ class ScrollableButtons:
         for button in self.buttons:
             button.update()
 
-
+#Button mit Icon statt Text
 class IconButton(Button):
     def __init__(self, center: tuple, icon, text: str = "", width: int = 50, height: int = 50, border_radius: int = 25, alpha: int = 255, r_inside: int = 50, g_inside: int = 70, b_inside: int = 140):
         super().__init__(text, center, width, height, border_radius, target_alpha_a=alpha, target_alpha_b=alpha, r_inside=r_inside, g_inside=g_inside, b_inside=b_inside)
@@ -604,6 +604,8 @@ class GameScene():
         self.money_icon = pygame.transform.scale(images.load("icon_money"), icon_size)
         self.science_icon = pygame.transform.scale(images.load("icon_science"), icon_size)
 
+        self.left_corner_button = IconButton((40, 40), self.get_lcorner_button_icon())
+        self.right_corner_button = IconButton((WIDTH - 40, 40), self.get_rcorner_button_icon())
 
         self.resource_colors = {
             "electricity": (255, 220, 50),
@@ -724,11 +726,12 @@ class GameScene():
         rect.center = (WIDTH - 40, 40)
         return rect
     def draw_corner_buttons(self):
+        self.left_corner_button.icon = self.get_lcorner_button_icon()
+        self.left_corner_button.draw()
+
         if isinstance(self, GameHomeBase):
-            l_icon = self.get_rcorner_button_icon()
-            IconButton((WIDTH - 40, 40), l_icon).draw()
-        r_icon = self.get_lcorner_button_icon()
-        IconButton((40, 40), r_icon).draw()
+            self.right_corner_button.icon = self.get_rcorner_button_icon()
+            self.right_corner_button.draw()
     
 
     def draw_ui(self):
@@ -740,7 +743,8 @@ class GameScene():
         pass
 
     def update(self):
-        self.draw_corner_buttons().update()
+        self.left_corner_button.update()
+        self.right_corner_button.update()
 
     def on_enter(self):
         pass
@@ -894,6 +898,8 @@ class GameHomeBase(GameScene):
         self.draw_ui()
 
     def update(self):
+        super().update()
+
         if any(getattr(keyboard, key) for key in self.controlls['movement']['boost']):
             boost = 3
         else:
@@ -933,7 +939,7 @@ class GameSketch(GameScene):
         self.draw_ui()
 
     def update(self):
-        pass
+        super().update()
 
 #Scene Game Map
 class GameMap(GameScene):
@@ -946,7 +952,7 @@ class GameMap(GameScene):
         self.draw_ui()
     
     def update(self):
-        pass
+        super().update()
 
 #-------------------------------------------
 #Hintergrund laden und skalieren
@@ -1142,9 +1148,8 @@ def on_key_down(key, mod, unicode):
             else:
                 print("Entered:", scene.input_text)
 
-            if key == key_attr('menu', 'input_space'):
-                if len(scene.input_text) < 32:
-                    scene.input_text += " "
+            if key == key_attr('menu', 'input_space') and len(scene.input_text) < 32:
+                scene.input_text += " "
                 return
 
     if unicode:
