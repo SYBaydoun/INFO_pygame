@@ -42,7 +42,6 @@ HEIGHT_STEP = 52 #<- nicht 64, damit dahinterliegende niedrigere blöcke gesehen
 tilemap = [
     [0 for x in range(MAP_SIZE)] for y in range(MAP_SIZE)
 ]
-print(tilemap)
 
 tiles = {
     0: "surface_bottom",
@@ -51,6 +50,8 @@ tiles = {
     3: "surface_dark",
 }
 solar = pygame.image.load("images/solar-removebg-preview(1).png")
+base = pygame.image.load("images/base.png")
+rocket = pygame.image.load("images/rocket.png")
 
 
 #-------------------------------------------
@@ -166,20 +167,23 @@ class SceneManager:
 
 #Buttons
 class Button():
-    def __init__(self, text, center):
+    def __init__(self, text: str, center: tuple, width: int = 300, height: int = 50, border_radius: int = 15, target_alpha_a: int = 140, target_alpha_b: int = 220, r_inside: int = 25, g_inside: int = 35, b_inside: int = 70, r_outline: int = 120, g_outline: int = 170, b_outline: int = 255):
         #inhalt
         self.text = text
 
         #position und größe
-        self.width = 300
-        self.height = 50
+        self.width = width
+        self.height = height
+        self.border_radius = border_radius
         self.rect = pygame.Rect(0, 0, self.width, self.height)
         self.rect.center = center
 
         # Animationen
         #-> transparenz des buttons
-        self.alpha = 140
-        self.target_alpha = 140
+        self.alpha = target_alpha_a
+        self.target_alpha = target_alpha_a
+        self.target_alpha_a = target_alpha_a
+        self.target_alpha_b = target_alpha_b
 
         #-> transparenz des glows
         self.glow_alpha = 0
@@ -189,17 +193,24 @@ class Button():
         self.offset_y = 0
         self.target_offset_y = 0
 
+        self.r_inside = r_inside
+        self.g_inside = g_inside
+        self.b_inside = b_inside
+        self.r_outline = r_outline
+        self.g_outline = g_outline
+        self.b_outline = b_outline
+
     def update(self):
         mouse_pos = pygame.mouse.get_pos()
 
         hovered = self.rect.collidepoint(mouse_pos)
 
         if hovered:
-            self.target_alpha = 220
+            self.target_alpha = self.target_alpha_b
             self.target_glow = 180
             self.target_offset_y = -3
         else:
-            self.target_alpha = 140
+            self.target_alpha = self.target_alpha_a
             self.target_glow = 0
             self.target_offset_y = 0
 
@@ -221,15 +232,15 @@ class Button():
 
         pygame.draw.rect(
             button_surface,
-            (25, 35, 70, int(self.alpha)),
+            (self.r_inside, self.g_inside, self.b_inside, int(self.alpha)),
             (0, 0, width, height),
-            border_radius=15
+            border_radius=self.border_radius
         )
 
         # Outline
         pygame.draw.rect(
             button_surface,
-            (120, 170, 255, min(int(self.glow_alpha), 120)),
+            (self.r_outline, self.g_outline, self.b_outline, min(int(self.glow_alpha), 120)),
             (0, 0, width, height),
             width=4,
             border_radius=15
@@ -296,6 +307,30 @@ class ScrollableButtons:
     def update(self):
         for button in self.buttons:
             button.update()
+
+
+class IconButton(Button):
+    def __init__(self, center: tuple, icon, text: str = "", width: int = 50, height: int = 50, border_radius: int = 25, alpha: int = 255, r_inside: int = 50, g_inside: int = 70, b_inside: int = 140):
+        super().__init__(text, center, width, height, border_radius, target_alpha_a=alpha, target_alpha_b=alpha, r_inside=r_inside, g_inside=g_inside, b_inside=b_inside)
+        self.icon = icon
+
+    def draw(self):
+        super().draw()
+
+        if self.icon:
+            screen.surface.blit(
+                self.icon,
+                (self.rect.x + 10, self.rect.centery - self.icon.get_height() // 2 + self.offset_y)
+            )
+    
+    def update(self):
+        super().update()
+    
+    def clicked(self, pos):
+        return super().clicked(pos)
+    
+    def set_position(self, pos):
+        super().set_position(pos)
 
 #Icons
 class Icon:
@@ -673,16 +708,39 @@ class GameScene():
             fontsize=font_size,
             color=(120, 220, 255)
         )
+    def get_lcorner_button_icon(self):
+        if isinstance(self, GameHomeBase):
+            return pygame.transform.scale(images.load("icon_blueprint"), (32, 32))
+        return pygame.transform.scale(images.load("icon_base"), (32, 32))
+
+    def get_lcorner_button_rect(self):
+        rect = pygame.Rect(0, 0, 50, 50)
+        rect.center = (40, 40)
+        return rect
+    def get_rcorner_button_icon(self):
+        return pygame.transform.scale(images.load("icon_build"), (32, 32))
+    def get_rcorner_button_rect(self):
+        rect = pygame.Rect(0, 0, 50, 50)
+        rect.center = (WIDTH - 40, 40)
+        return rect
+    def draw_corner_buttons(self):
+        if isinstance(self, GameHomeBase):
+            l_icon = self.get_rcorner_button_icon()
+            IconButton((WIDTH - 40, 40), l_icon).draw()
+        r_icon = self.get_lcorner_button_icon()
+        IconButton((40, 40), r_icon).draw()
+    
 
     def draw_ui(self):
         self.draw_resource_bars()
         self.draw_top_stats()
+        self.draw_corner_buttons()
 
     def draw(self):
         pass
 
     def update(self):
-        pass
+        self.draw_corner_buttons().update()
 
     def on_enter(self):
         pass
@@ -691,7 +749,15 @@ class GameScene():
         pass
 
     def on_mouse_down(self, pos, button):
-        pass
+        if button == mouse.LEFT and self.get_lcorner_button_rect().collidepoint(pos):
+            if isinstance(self, GameHomeBase):
+                manager.change_scene(GameSketch(save_path=self.save_path))
+            elif isinstance(self, GameSketch):
+                manager.change_scene(GameHomeBase(save_path=self.save_path))
+            else:
+                manager.change_scene(GameHomeBase(save_path=self.save_path))
+        elif button == mouse.LEFT and self.get_rcorner_button_rect().collidepoint(pos) and isinstance(self, GameHomeBase):
+            print("Build menu opened")
 
 #Scene Game Base
 class GameHomeBase(GameScene):
@@ -710,6 +776,8 @@ class GameHomeBase(GameScene):
         self.scaled_tiles = {}
 
         self.solar_scaled = pygame.transform.scale(solar, (128, 128))
+        self.base_scaled = pygame.transform.scale(base, (128, 128))
+        self.rocket_scaled = pygame.transform.scale(rocket, (256, 256))
 
         self.controlls = load_save("controlls.json")
 
@@ -811,10 +879,17 @@ class GameHomeBase(GameScene):
                 screen.surface.blit(
                     self.solar_scaled,
                     (
-                        screen_x - TILE_WIDTH // 2 - 10,
+                        screen_x - TILE_WIDTH // 2 - 10, # -10 weil die solarzellen kleiner sind und deswegen richtig positionert werden müssen
                         screen_y - TILE_HEIGHT // 2 - 10
                     )
                 )
+        x, y = attr_json(self.save_path, "start_modul_pos", "rocket")
+        screen_x, screen_y = self.iso_to_screen(x, y)
+        screen.surface.blit(self.rocket_scaled, (screen_x - TILE_WIDTH, screen_y - TILE_HEIGHT))
+        
+        x, y = attr_json(self.save_path, "start_modul_pos", "base")
+        screen_x, screen_y = self.iso_to_screen(x, y)
+        screen.surface.blit(self.base_scaled, (screen_x - TILE_WIDTH // 2, screen_y - TILE_HEIGHT // 2))
 
         self.draw_ui()
 
