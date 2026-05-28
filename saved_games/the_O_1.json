@@ -1,0 +1,42 @@
+{
+  "name": "the_O_1",
+  "created": "20260528132839",
+  "seed": 888808,
+  "resources": {
+    "electricity": 60,
+    "metal": 40,
+    "minerals": 85,
+    "water": 20,
+    "communication": 55,
+    "money": 10000,
+    "science": 0
+  },
+  "resource_max": {
+    "electricity": 60,
+    "metal": 100,
+    "minerals": 100,
+    "water": 100,
+    "communication": 100
+  },
+  "start_modul_pos": {
+    "solar": [
+      [
+        0,
+        5
+      ],
+      [
+        3,
+        10
+      ]
+    ],
+    "base": [
+      2,
+      4
+    ],
+    "rocket": [
+      4,
+      9
+    ]
+  },
+  "progress": {}
+}
