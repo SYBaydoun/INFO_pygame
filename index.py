@@ -1006,7 +1006,7 @@ def menu_font() -> str:
 #starten eines neuen games
 def new_game_logik(current_scene):
     save_name = current_scene.input_text.strip()
-    noise = OpenSimplex(random.randint(0, 1_000_000))
+    noise = OpenSimplex(random.randint(0, 1_048_576))
     if save_name:
         filename = sanitize_filename(save_name)
         if filename:
@@ -1062,8 +1062,10 @@ def attr_json(file: str, inner_dict: str, item: str) -> int | str | list[int | s
     outer_dict = load_save(file)
     return outer_dict[inner_dict][item]
 
+#wandelt die eckpunkte im save file format in die einzelnen koordinaten für das viereck um
 def koordinaten_netz(eckpunkte: list) -> list:
     return eckpunkte[0][0], eckpunkte[0][1], eckpunkte[1][0], eckpunkte[1][1]
+
 #setzt die buttonkollision für die szenen um
 def on_mouse_down(pos, button):
     manager.on_mouse_down(pos, button)
