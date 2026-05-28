@@ -1006,7 +1006,7 @@ def menu_font() -> str:
 #starten eines neuen games
 def new_game_logik(current_scene):
     save_name = current_scene.input_text.strip()
-    noise = OpenSimplex(random.randint(0, 1_048_576))
+    noise = OpenSimplex(random.randint(0, 1_048_575))
     if save_name:
         filename = sanitize_filename(save_name)
         if filename:
