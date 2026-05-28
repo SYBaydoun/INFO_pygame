@@ -1021,36 +1021,19 @@ def new_game_logik(current_scene):
                         save_path = alt_path
                         break
                     counter += 1
+                filename = f"{filename}_{counter}"
 
-            save_data = {
-            "name": f"{filename}_{counter}",
-            "created": time.strftime("%Y%m%d%H%M%S", time.gmtime()),
-            "seed": noise._seed,
-            "resources": {
-                "electricity": 70,
-                "metal": 40,
-                "minerals": 85,
-                "water": 20,
-                "communication": 55,
-                "money": 123456,
-                "science": 67890
-            },
-            "resource_max": {
-                "electricity": 100,
-                "metal": 100,
-                "minerals": 100,
-                "water": 100,
-                "communication": 100
-            },
-            "progress": {}
-            }
+            with open("save_format.json", "r", encoding="utf-8") as f:
+                save_data = json.load(f)
+            save_data["name"] = filename
+            save_data["created"] = time.strftime("%Y%m%d%H%M%S", time.gmtime())
+            save_data["seed"] = noise._seed
 
             with open(save_path, "w", encoding="utf-8") as save_file:
                 json.dump(save_data, save_file, indent=2)
 
             current_scene.current_save_path = save_path
             manager.change_scene(GameHomeBase(save_path=save_path))
-            print(f"Created save file: {save_path}")
 
 #fortfahren eines games mit json datei
 def continue_game_logik(current_scene):
@@ -1169,6 +1152,14 @@ def draw():
 #frames
 def update():
     manager.update()
+
+with open("save_format.json", "r", encoding="utf-8") as f:
+    data = json.load(f)
+print(type(data))
+data["name"] = "test2"
+data["created"] = time.strftime("%Y%m%d%H%M%S", time.gmtime())
+data["seed"] = 123456
+print(data)
 
 #go
 pgzrun.go()

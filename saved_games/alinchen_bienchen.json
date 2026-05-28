@@ -1,22 +1,42 @@
 {
   "name": "alinchen_bienchen_1",
-  "created": "20260519105019",
+  "created": "20260528125110",
   "seed": 47475,
   "resources": {
-    "electricity": 70,
+    "electricity": 60,
     "metal": 40,
     "minerals": 85,
     "water": 20,
     "communication": 55,
-    "money": 123456,
-    "science": 67890
+    "money": 10000,
+    "science": 0
   },
   "resource_max": {
-    "electricity": 100,
+    "electricity": 60,
     "metal": 100,
     "minerals": 100,
     "water": 100,
     "communication": 100
+  },
+  "start_modul_pos": {
+    "solar": [
+      [
+        0,
+        5
+      ],
+      [
+        3,
+        10
+      ]
+    ],
+    "base": [
+      2,
+      4
+    ],
+    "rocket": [
+      4,
+      9
+    ]
   },
   "progress": {}
 }
