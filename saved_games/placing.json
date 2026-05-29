@@ -1,7 +1,7 @@
 {
-  "name": "",
-  "created": 0,
-  "seed": 0,
+  "name": "placing",
+  "created": "20260529112027",
+  "seed": 747236,
   "resources": {
     "electricity": 60,
     "metal": 40,
@@ -19,21 +19,24 @@
     "communication": 100
   },
   "start_modul_pos": {
-    "solar": [[0,5], [3,10]],
-    "base": [2,4],
-    "rocket": [4,9]
-  }, 
-  "solar": {
-    "number": 15,
-    "extra_pos": []
-  },
-  "base":{
-    "number": 1,
-    "extra_pos": []
-  },
-  "rocket":{
-    "number": 1,
-    "extra_pos": []
+    "solar": [
+      [
+        0,
+        5
+      ],
+      [
+        3,
+        10
+      ]
+    ],
+    "base": [
+      2,
+      4
+    ],
+    "rocket": [
+      4,
+      9
+    ]
   },
   "progress": {}
 }

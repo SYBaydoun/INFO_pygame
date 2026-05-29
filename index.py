@@ -5,6 +5,7 @@ import pygame
 import os
 import json
 import time
+from collections.abc import Callable
 
 # öffnet das verfluchte Fenster zentriert, warum auch immer das nicht automatisch passiert
 os.environ['SDL_VIDEO_CENTERED'] = '1'
@@ -39,16 +40,20 @@ OFFSET_Y = 600
 
 HEIGHT_STEP = 52 #<- nicht 64, damit dahinterliegende niedrigere blöcke gesehen werden können
 
+#sart fläche für die map, wird später durch die höhenfunktion ersetzt
 tilemap = [
     [0 for x in range(MAP_SIZE)] for y in range(MAP_SIZE)
 ]
 
+#die verschiedenen höhen
 tiles = {
     0: "surface_bottom",
     1: "surface_light",
     2: "surface_medium",
     3: "surface_dark",
 }
+
+#Bilder der Module Laden
 solar = pygame.image.load("images/solar.png")
 base = pygame.image.load("images/base.png")
 rocket = pygame.image.load("images/rocket.png")
@@ -363,13 +368,21 @@ class Icon():
 
 #Build Menu in der HomeBase Szene
 class BuildMenu():
-    def __init__(self, items: list[str]):
+    def __init__(self, items: list[str], actions: list[Callable] | None = None):
         self.items = items
+        self.actions = self._normalize_actions(actions)
         self.visible = False
         self.rect = pygame.Rect(0, 0, 240, 280)
         self.rect.topright = (WIDTH - 10, 10)
         self.buttons: list[Button] = []
         self.setup_buttons()
+    def _normalize_actions(self, actions):
+        if actions is None:
+            return [None] * len(self.items)
+        elif len(actions) < len(self.items):
+            return actions + [None] * (len(self.items) - len(actions))
+        else:
+            return actions[:len(self.items)]
 
     def setup_buttons(self):
         self.buttons.clear()
@@ -395,12 +408,14 @@ class BuildMenu():
             )
             self.buttons.append(button)
 
-    def set_items(self, items: list[str]):
+    def set_items(self, items: list[str], actions: list[Callable] | None = None):
         self.items = items
+        self.actions = self._normalize_actions(actions)
         self.setup_buttons()
 
-    def add_item(self, text: str):
+    def add_item(self, text: str, action: Callable | None = None):
         self.items.append(text)
+        self.actions.append(action)
         self.setup_buttons()
 
     def toggle(self):
@@ -439,8 +454,11 @@ class BuildMenu():
         if not self.visible:
             return None
 
-        for button in self.buttons:
+        for i, button in enumerate(self.buttons):
             if button.clicked(pos):
+                action = self.actions[i] if i < len(self.actions) else None
+                if action:
+                    action()
                 return button.text
 
         return None
@@ -809,13 +827,7 @@ class GameScene():
         rect = pygame.Rect(0, 0, 50, 50)
         rect.center = (WIDTH - 40, 40)
         return rect
-    def build_menu_rect(self):
-        rect = pygame.Rect(0, 0, 200, 300)
-        rect.topright = (WIDTH - 10, 10)
-        build_surface = pygame.Surface(rect.size, pygame.SRCALPHA)
-        pygame.draw.rect(build_surface, (20, 20, 30, 200), build_surface.get_rect(), border_radius=10)
-        screen.surface.blit(build_surface, rect.topleft)
-        return rect
+
     def draw_corner_buttons(self):
         self.left_corner_button.icon = self.get_lcorner_button_icon()
         self.left_corner_button.draw()
@@ -872,9 +884,17 @@ class GameHomeBase(GameScene):
 
         super().__init__(save_path)
 
-        self.build_menu = BuildMenu(["Solar", "Base", "Rocket"])
+        self.build_menu = BuildMenu(
+            ["Solar", "Base", "Rocket"],
+            [self.build_solar, self.build_base, self.build_rocket]
+        )
 
         self.save_path = save_path
+
+        # runtime placed objects (not yet saved)
+        self.placed_solar: list[tuple[int,int]] = []
+        # current preview placement state (None when not placing)
+        self.placing: dict | None = None
 
         self.camera_x = 0
         self.camera_y = 0
@@ -897,6 +917,19 @@ class GameHomeBase(GameScene):
                 original,
                 (128, 128)
             )
+
+    def build_solar(self):
+        # start placement preview at tile (0,0)
+        self.placing = {"type": "solar", "x": 0, "y": 0}
+        self.build_menu.close()
+
+    def build_base(self):
+        print("Basis bauen")
+        self.build_menu.close()
+
+    def build_rocket(self):
+        print("Rakete bauen")
+        self.build_menu.close()
 
     def get_height(self, x: int, y: int) -> int:
 
@@ -991,6 +1024,25 @@ class GameHomeBase(GameScene):
                         screen_y - TILE_HEIGHT // 2 - 10
                     )
                 )
+        # draw runtime placed solar panels
+        for sx, sy in getattr(self, 'placed_solar', []):
+            screen_x, screen_y = self.iso_to_screen(sx, sy)
+            screen.surface.blit(
+                self.solar_scaled,
+                (screen_x - TILE_WIDTH // 2 - 10, screen_y - TILE_HEIGHT // 2 - 10)
+            )
+
+        # draw preview (transparent) if placing
+        if getattr(self, 'placing', None) is not None and self.placing.get('type') == 'solar':
+            px = int(self.placing['x'])
+            py = int(self.placing['y'])
+            screen_x, screen_y = self.iso_to_screen(px, py)
+            preview = self.solar_scaled.copy()
+            try:
+                preview.set_alpha(120)
+            except Exception:
+                pass
+            screen.surface.blit(preview, (screen_x - TILE_WIDTH // 2 - 10, screen_y - TILE_HEIGHT // 2 - 10))
         x, y = attr_json(self.save_path, "start_modul_pos", "rocket")
         screen_x, screen_y = self.iso_to_screen(x, y)
         screen.surface.blit(self.rocket_scaled, (screen_x - TILE_WIDTH, screen_y - TILE_HEIGHT))
@@ -1005,6 +1057,28 @@ class GameHomeBase(GameScene):
 
     def update(self):
         super().update()
+
+        # placement mode handling
+        if self.placing is not None:
+            gm = self.controlls.get('game_base_mechanics', {})
+
+            # move with the mapped keys (one tile per frame while held)
+            if getattr(keyboard, gm.get('left', ''), False):
+                self.placing['x'] += 1
+            if getattr(keyboard, gm.get('right', ''), False) and self.placing['x'] > 0:
+                self.placing['x'] -= 1
+            if getattr(keyboard, gm.get('up', ''), False):
+                self.placing['y'] += 1
+            if getattr(keyboard, gm.get('down', ''), False) and self.placing['y'] > 0:
+                self.placing['y'] -= 1
+
+            # place the object when pressing the place key
+            if getattr(keyboard, gm.get('place', ''), False):
+                if self.placing['type'] == 'solar':
+                    self.placed_solar.append((int(self.placing['x']), int(self.placing['y'])))
+                self.placing = None
+
+        # camera movement (original behaviour)
 
         if any(getattr(keyboard, key) for key in self.controlls['movement']['boost']):
             boost = 3

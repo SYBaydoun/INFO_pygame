@@ -34,8 +34,6 @@
         "left": "j",
         "up": "i",
         "right": "l",
-        "down": "k",
-        "rot_left": "u",
-        "rot_right": "o"
+        "down": "k"
     }
 }
