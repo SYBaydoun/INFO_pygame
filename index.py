@@ -14,7 +14,7 @@ WIDTH  = 1200
 HEIGHT = 800
 
 TITLE = "FeiniSpaceAgency"
-creditMsg = "Game developed by:\nShahin Youssef Baydoun\n Graphics by:\nShahin Youssef Baydoun\nMoralische Unterstützung:\nAlinchen Bienchen :)\ntest"
+creditMsg = "Game developed by:\nShahin Youssef Baydoun\nIdea by:\nMe\nGraphics by:\nMyself\nTested by:\nand I\nMoralische Unterstützung:\nAlinchen Bienchen :)\ntest"
 
 #Buttons im Menübereich
 menuLibrary = {"menu_items": ["Start New Game", "Continue Game", "Settings", "Credits", "Quit"],
@@ -49,14 +49,14 @@ tiles = {
     2: "surface_medium",
     3: "surface_dark",
 }
-solar = pygame.image.load("images/solar-removebg-preview(1).png")
+solar = pygame.image.load("images/solar.png")
 base = pygame.image.load("images/base.png")
 rocket = pygame.image.load("images/rocket.png")
 
 
 #-------------------------------------------
 #Scenen Manager
-class SceneManager:
+class SceneManager():
     def __init__(self, start_scene):
         self.scene = start_scene
         self.scene.on_enter()
@@ -262,7 +262,7 @@ class Button():
         self.rect.center = pos
 
 #Button gruppe die sich scrollen lässt
-class ScrollableButtons:
+class ScrollableButtons():
     def __init__(self):
         self.buttons = []
         self.upper_bound = 0
@@ -333,7 +333,7 @@ class IconButton(Button):
         super().set_position(pos)
 
 #Icons
-class Icon:
+class Icon():
     def __init__(self, source, position, size=icon_size, bg_color=(20, 20, 35), border_color=(80, 80, 120)):
         if isinstance(source, str):
             source = images.load(source)
@@ -360,6 +360,90 @@ class Icon:
     def move(self, dx, dy):
         x, y = self.position
         self.position = (x + dx, y + dy)
+
+#Build Menu in der HomeBase Szene
+class BuildMenu():
+    def __init__(self, items: list[str]):
+        self.items = items
+        self.visible = False
+        self.rect = pygame.Rect(0, 0, 240, 280)
+        self.rect.topright = (WIDTH - 10, 10)
+        self.buttons: list[Button] = []
+        self.setup_buttons()
+
+    def setup_buttons(self):
+        self.buttons.clear()
+        for i, text in enumerate(self.items):
+            center = (
+                self.rect.left + self.rect.width // 2,
+                self.rect.top + 90 + i * 60
+            )
+            button = Button(
+                text,
+                center,
+                width=self.rect.width - 20,
+                height=44,
+                border_radius=12,
+                target_alpha_a=120,
+                target_alpha_b=220,
+                r_inside=40,
+                g_inside=55,
+                b_inside=70,
+                r_outline=120,
+                g_outline=190,
+                b_outline=255
+            )
+            self.buttons.append(button)
+
+    def set_items(self, items: list[str]):
+        self.items = items
+        self.setup_buttons()
+
+    def add_item(self, text: str):
+        self.items.append(text)
+        self.setup_buttons()
+
+    def toggle(self):
+        self.visible = not self.visible
+
+    def open(self):
+        self.visible = True
+
+    def close(self):
+        self.visible = False
+
+    def draw(self):
+        if not self.visible:
+            return
+
+        pygame.draw.rect(screen.surface, (20, 20, 30, 220), self.rect, border_radius=12)
+        pygame.draw.rect(screen.surface, (140, 180, 230), self.rect, 2, border_radius=12)
+        screen.draw.text(
+            "Build Menu",
+            (self.rect.left + 16, self.rect.top + 16),
+            fontsize=26,
+            color="white"
+        )
+
+        for button in self.buttons:
+            button.draw()
+
+    def update(self):
+        if not self.visible:
+            return
+
+        for button in self.buttons:
+            button.update()
+
+    def handle_click(self, pos):
+        if not self.visible:
+            return None
+
+        for button in self.buttons:
+            if button.clicked(pos):
+                return button.text
+
+        return None
 
 
 #-------------------------------------------
@@ -725,13 +809,24 @@ class GameScene():
         rect = pygame.Rect(0, 0, 50, 50)
         rect.center = (WIDTH - 40, 40)
         return rect
+    def build_menu_rect(self):
+        rect = pygame.Rect(0, 0, 200, 300)
+        rect.topright = (WIDTH - 10, 10)
+        build_surface = pygame.Surface(rect.size, pygame.SRCALPHA)
+        pygame.draw.rect(build_surface, (20, 20, 30, 200), build_surface.get_rect(), border_radius=10)
+        screen.surface.blit(build_surface, rect.topleft)
+        return rect
     def draw_corner_buttons(self):
         self.left_corner_button.icon = self.get_lcorner_button_icon()
         self.left_corner_button.draw()
-
         if isinstance(self, GameHomeBase):
+            # draw the build menu first so the corner button stays on top
+            if hasattr(self, "build_menu"):
+                self.build_menu.draw()
+
             self.right_corner_button.icon = self.get_rcorner_button_icon()
             self.right_corner_button.draw()
+            
     
 
     def draw_ui(self):
@@ -745,6 +840,8 @@ class GameScene():
     def update(self):
         self.left_corner_button.update()
         self.right_corner_button.update()
+        if hasattr(self, "build_menu"):
+            self.build_menu.update()
 
     def on_enter(self):
         pass
@@ -761,7 +858,12 @@ class GameScene():
             else:
                 manager.change_scene(GameHomeBase(save_path=self.save_path))
         elif button == mouse.LEFT and self.get_rcorner_button_rect().collidepoint(pos) and isinstance(self, GameHomeBase):
-            print("Build menu opened")
+            if hasattr(self, "build_menu"):
+                self.build_menu.toggle()
+        elif hasattr(self, "build_menu"):
+            clicked_item = self.build_menu.handle_click(pos)
+            if clicked_item:
+                print(f"Build menu item clicked: {clicked_item}")
 
 #Scene Game Base
 class GameHomeBase(GameScene):
@@ -769,6 +871,8 @@ class GameHomeBase(GameScene):
     def __init__(self, save_path: str=None):
 
         super().__init__(save_path)
+
+        self.build_menu = BuildMenu(["Solar", "Base", "Rocket"])
 
         self.save_path = save_path
 
@@ -894,6 +998,8 @@ class GameHomeBase(GameScene):
         x, y = attr_json(self.save_path, "start_modul_pos", "base")
         screen_x, screen_y = self.iso_to_screen(x, y)
         screen.surface.blit(self.base_scaled, (screen_x - TILE_WIDTH // 2, screen_y - TILE_HEIGHT // 2))
+
+
 
         self.draw_ui()
 
@@ -1154,14 +1260,6 @@ def draw():
 #frames
 def update():
     manager.update()
-
-with open("save_format.json", "r", encoding="utf-8") as f:
-    data = json.load(f)
-print(type(data))
-data["name"] = "test2"
-data["created"] = time.strftime("%Y%m%d%H%M%S", time.gmtime())
-data["seed"] = 123456
-print(data)
 
 #go
 pgzrun.go()
