@@ -73,6 +73,8 @@ class SceneManager():
         self.t = 0
         self.speed = 1
 
+        # whether to show debug overlay text on screen
+        self.debug_overlay = False
         self.dauer_bewegung = 120
         self.dauer_ruhen = 10
 
@@ -123,11 +125,33 @@ class SceneManager():
     def draw(self):
         self.scene.draw()
 
+        # draw debug overlay text on top of the scene when enabled
+        if getattr(self, 'debug_overlay', False):
+            lines = []
+            lines.append(f"Scene: {self.scene.__class__.__name__}")
+            if hasattr(self.scene, 'noise'):
+                lines.append(f"Seed: {getattr(self.scene.noise, '_seed', 'N/A')}")
+            try:
+                if isinstance(self.scene, GameHomeBase):
+                    lines.append(f"Camera: {self.scene.camera_x:.2f}, {self.scene.camera_y:.2f}")
+            except Exception:
+                pass
+
+            y = 10
+            for line in lines:
+                screen.draw.text(line, (10, y), fontsize=18, color="white")
+                y += 20
+
         if self.transitioning:
             self.draw_doors()
 
     def on_mouse_down(self, pos, button):
         if self.transitioning:
+            return
+
+        # if debug overlay is visible, hide it on any left click and consume the event
+        if self.debug_overlay and button == mouse.LEFT:
+            self.debug_overlay = False
             return
 
         # nur scrollrad behandeln
@@ -603,8 +627,6 @@ class ContinueGame(MenuSzene):
              if button.clicked(pos):
                 if button.text == "Back":
                     manager.change_scene(Menu())
-                elif button.text.startswith("Save"):
-                    print(f"Continuing game from {button.text}...")
 
         if self.scrollable_ui:
             result = self.scrollable_ui.on_click(pos)
@@ -873,9 +895,7 @@ class GameScene():
             if hasattr(self, "build_menu"):
                 self.build_menu.toggle()
         elif hasattr(self, "build_menu"):
-            clicked_item = self.build_menu.handle_click(pos)
-            if clicked_item:
-                print(f"Build menu item clicked: {clicked_item}")
+            self.build_menu.handle_click(pos)
 
 #Scene Game Base
 class GameHomeBase(GameScene):
@@ -884,17 +904,7 @@ class GameHomeBase(GameScene):
 
         super().__init__(save_path)
 
-        self.build_menu = BuildMenu(
-            ["Solar", "Base", "Rocket"],
-            [self.build_solar, self.build_base, self.build_rocket]
-        )
-
         self.save_path = save_path
-
-        # runtime placed objects (not yet saved)
-        self.placed_solar: list[tuple[int,int]] = []
-        # current preview placement state (None when not placing)
-        self.placing: dict | None = None
 
         self.camera_x = 0
         self.camera_y = 0
@@ -918,18 +928,92 @@ class GameHomeBase(GameScene):
                 (128, 128)
             )
 
-    def build_solar(self):
-        # start placement preview at tile (0,0)
-        self.placing = {"type": "solar", "x": 0, "y": 0}
+        self.buildable_types = {
+            "solar": {
+                "label": "Solar",
+                "icon": self.solar_scaled,
+                "save_key": "solar",
+                "offset": (-TILE_WIDTH // 2 - 10, -TILE_HEIGHT // 2 - 10)
+            },
+            "base": {
+                "label": "Base",
+                "icon": self.base_scaled,
+                "save_key": "base",
+                "offset": (-TILE_WIDTH // 2, -TILE_HEIGHT // 2)
+            },
+            "rocket": {
+                "label": "Rocket",
+                "icon": self.rocket_scaled,
+                "save_key": "rocket",
+                "offset": (-TILE_WIDTH, -TILE_HEIGHT)
+            }
+        }
+
+        self.placed_objects: dict[str, list[tuple[int, int]]] = self.load_saved_placements()
+        self.placing: dict | None = None
+
+        self.build_menu = BuildMenu(
+            [entry["label"] for entry in self.buildable_types.values()],
+            [lambda object_type=object_type: self.start_placement(object_type) for object_type in self.buildable_types.keys()]
+        )
+
+        self.camera_speed = 0.1
+
+        self.scaled_tiles = {}
+
+        self.solar_scaled = pygame.transform.scale(solar, (128, 128))
+        self.base_scaled = pygame.transform.scale(base, (128, 128))
+        self.rocket_scaled = pygame.transform.scale(rocket, (256, 256))
+
+        self.controlls = load_save("controlls.json")
+
+        for tile_id, image_name in tiles.items():
+
+            original = images.load(image_name)
+
+            self.scaled_tiles[tile_id] = pygame.transform.scale(
+                original,
+                (128, 128)
+            )
+
+    def start_placement(self, object_type: str):
+        self.placing = {"type": object_type, "x": self.camera_x, "y": self.camera_y}
         self.build_menu.close()
 
-    def build_base(self):
-        print("Basis bauen")
-        self.build_menu.close()
+    def load_saved_placements(self) -> dict[str, list[tuple[int, int]]]:
+        placements: dict[str, list[tuple[int, int]]] = {}
+        for object_type, info in self.buildable_types.items():
+            try:
+                saved = attr_json(self.save_path, info["save_key"], "extra_pos")
+                placements[object_type] = [tuple(pos) for pos in saved]
+            except Exception:
+                placements[object_type] = []
+        return placements
 
-    def build_rocket(self):
-        print("Rakete bauen")
-        self.build_menu.close()
+    def save_placement(self, object_type: str, x: int, y: int):
+        save_data = load_save(self.save_path)
+        save_key = self.buildable_types[object_type]["save_key"]
+        print(save_key, x, y, save_data)
+
+        if save_key not in save_data:
+            save_data[save_key] = {"number": 0, "extra_pos": []}
+
+        if "extra_pos" not in save_data[save_key]:
+            save_data[save_key]["extra_pos"] = []
+        
+        if "number" not in save_data[save_key]:
+            save_data[save_key]["number"] = 0
+
+        save_data[save_key]["extra_pos"].append([x, y])
+        save_data[save_key]["number"] += 1
+
+        if "placed_objects" not in save_data:
+            save_data["placed_objects"] = []
+        
+        save_data["placed_objects"].extend(calculate_placementspace(object_type, x, y))
+
+        with open(self.save_path, "w", encoding="utf-8") as save_file:
+            json.dump(save_data, save_file, indent=2)
 
     def get_height(self, x: int, y: int) -> int:
 
@@ -1024,25 +1108,36 @@ class GameHomeBase(GameScene):
                         screen_y - TILE_HEIGHT // 2 - 10
                     )
                 )
-        # draw runtime placed solar panels
-        for sx, sy in getattr(self, 'placed_solar', []):
-            screen_x, screen_y = self.iso_to_screen(sx, sy)
-            screen.surface.blit(
-                self.solar_scaled,
-                (screen_x - TILE_WIDTH // 2 - 10, screen_y - TILE_HEIGHT // 2 - 10)
-            )
+        # draw runtime placed objects
+        for object_type, positions in self.placed_objects.items():
+            if object_type not in self.buildable_types:
+                continue
+            info = self.buildable_types[object_type]
+            icon = info["icon"]
+            offset_x, offset_y = info.get("offset", (-TILE_WIDTH // 2, -TILE_HEIGHT // 2))
+            for sx, sy in positions:
+                screen_x, screen_y = self.iso_to_screen(sx, sy)
+                screen.surface.blit(
+                    icon,
+                    (screen_x + offset_x, screen_y + offset_y)
+                )
 
         # draw preview (transparent) if placing
-        if getattr(self, 'placing', None) is not None and self.placing.get('type') == 'solar':
-            px = int(self.placing['x'])
-            py = int(self.placing['y'])
-            screen_x, screen_y = self.iso_to_screen(px, py)
-            preview = self.solar_scaled.copy()
-            try:
-                preview.set_alpha(120)
-            except Exception:
-                pass
-            screen.surface.blit(preview, (screen_x - TILE_WIDTH // 2 - 10, screen_y - TILE_HEIGHT // 2 - 10))
+        if self.placing is not None:
+            object_type = self.placing.get('type')
+            if object_type in self.buildable_types:
+                info = self.buildable_types[object_type]
+                icon = info["icon"].copy()
+                offset_x, offset_y = info.get("offset", (-TILE_WIDTH // 2, -TILE_HEIGHT // 2))
+                px = int(self.placing['x'])
+                py = int(self.placing['y'])
+                screen_x, screen_y = self.iso_to_screen(px, py)
+                try:
+                    icon.set_alpha(120)
+                except Exception:
+                    pass
+                screen.surface.blit(icon, (screen_x + offset_x, screen_y + offset_y))
+
         x, y = attr_json(self.save_path, "start_modul_pos", "rocket")
         screen_x, screen_y = self.iso_to_screen(x, y)
         screen.surface.blit(self.rocket_scaled, (screen_x - TILE_WIDTH, screen_y - TILE_HEIGHT))
@@ -1073,9 +1168,13 @@ class GameHomeBase(GameScene):
                 self.placing['y'] -= 1
 
             # place the object when pressing the place key
-            if getattr(keyboard, gm.get('place', ''), False):
-                if self.placing['type'] == 'solar':
-                    self.placed_solar.append((int(self.placing['x']), int(self.placing['y'])))
+            if getattr(keyboard, gm.get('place', ''), False) and is_space_free(self.save_path, self.placing['type'], self.placing['x'], self.placing['y']):
+                object_type = self.placing['type']
+                x = int(self.placing['x'])
+                y = int(self.placing['y'])
+                if object_type in self.buildable_types:
+                    self.placed_objects.setdefault(object_type, []).append((x, y))
+                    self.save_placement(object_type, x, y)
                 self.placing = None
 
         # camera movement (original behaviour)
@@ -1246,6 +1345,29 @@ def attr_json(file: str, inner_dict: str, item: str) -> int | str | list[int | s
 def koordinaten_netz(eckpunkte: list) -> list:
     return eckpunkte[0][0], eckpunkte[0][1], eckpunkte[1][0], eckpunkte[1][1]
 
+def calculate_placementspace(object_type: str, x: int, y: int) -> list[list[int, int]]:
+    if object_type == "solar":
+        return [[x, y]]
+    elif object_type == "base":
+        return [[x, y], [x - 1, y], [x, y - 1], [x - 1, y - 1]]
+    elif object_type == "rocket":
+        return [[x, y], [x - 1, y], [x, y - 1], [x - 1, y - 1]]
+
+
+def is_space_free(save_path: str, object_type: str, x: int, y: int) -> bool:
+    save_data = load_save(save_path)
+    checking_koordinates = calculate_placementspace(object_type, x, y)
+    placed = save_data.get("placed_objects", [])
+    print(placed, checking_koordinates)
+    for pos in checking_koordinates:
+        if pos in placed:
+            return False
+    for pos in checking_koordinates:
+        if pos[0] < 0 or pos[1] < 0:
+            return False
+    return True
+    # vergleicht die koordinaten
+
 #setzt die buttonkollision für die szenen um
 def on_mouse_down(pos, button):
     manager.on_mouse_down(pos, button)
@@ -1265,9 +1387,11 @@ def on_key_down(key, mod, unicode):
         if key == key_attr('extra', 'open_menu'):
             manager.change_scene(Menu())
         elif key == key_attr('extra', 'toggle_debug'):
-            print("noise seed:", scene.noise._seed)
-            if isinstance(scene, GameHomeBase):
-                print("Koordinaten: ", scene.camera_x, ", ", scene.camera_y)
+            # toggle on-screen debug overlay instead of printing to terminal
+            try:
+                manager.debug_overlay = not getattr(manager, 'debug_overlay', False)
+            except Exception:
+                manager.debug_overlay = True
         elif key == key_attr('game_scene_switch', 'fwd'):
             if isinstance(scene, GameHomeBase):
                 manager.change_scene(GameSketch(save_path=scene.save_path))
