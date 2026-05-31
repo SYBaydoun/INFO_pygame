@@ -739,6 +739,16 @@ class GameScene():
             "communication": (200, 120, 255),
         }
 
+    def refresh_resources(self):
+        state = load_save(self.save_path)
+        self.resources["electricity"]["current"] = state["resources"]["electricity"]
+        self.resources["metal"]["current"] = state["resources"]["metal"]
+        self.resources["minerals"]["current"] = state["resources"]["minerals"]
+        self.resources["water"]["current"] = state["resources"]["water"]
+        self.resources["communication"]["current"] = state["resources"]["communication"]
+        self.money = state["resources"]["money"]
+        self.science = state["resources"]["science"]
+
     def draw_resource_bar(self, x, y, resource):
 
         bar_width = 200
@@ -991,9 +1001,12 @@ class GameHomeBase(GameScene):
         return placements
 
     def save_placement(self, object_type: str, x: int, y: int):
-        save_data = load_save(self.save_path)
         save_key = self.buildable_types[object_type]["save_key"]
-        print(save_key, x, y, save_data)
+
+        if not module_resource_manipulation(self.save_path, save_key):
+            return
+
+        save_data = load_save(self.save_path)
 
         if save_key not in save_data:
             save_data[save_key] = {"number": 0, "extra_pos": []}
@@ -1014,6 +1027,8 @@ class GameHomeBase(GameScene):
 
         with open(self.save_path, "w", encoding="utf-8") as save_file:
             json.dump(save_data, save_file, indent=2)
+
+        self.refresh_resources()
 
     def get_height(self, x: int, y: int) -> int:
 
@@ -1367,6 +1382,39 @@ def is_space_free(save_path: str, object_type: str, x: int, y: int) -> bool:
             return False
     return True
     # vergleicht die koordinaten
+
+
+def module_resource_manipulation(save_path: str, object_type: str) -> bool:
+    save_data = load_save(save_path)
+    if object_type == "solar":
+        if save_data["resources"]["money"] >= 100:
+            save_data["resources"]["electricity"] += 4
+            save_data["resource_max"]["electricity"] += 4
+            save_data["resources"]["money"] -= 100
+        else:
+            return False
+    elif object_type == "base":
+        if save_data["resources"]["electricity"] >= 2 and save_data["resources"]["metal"] >= 30 and save_data["resources"]["minerals"] >= 5 and save_data["resources"]["water"] >= 10 and save_data["resources"]["money"] >= 100:
+            save_data["resources"]["electricity"] -= 2
+            save_data["resources"]["metal"] -= 30
+            save_data["resources"]["minerals"] -= 5
+            save_data["resources"]["water"] -= 10
+            save_data["resource_max"]["metal"] += 20
+            save_data["resource_max"]["minerals"] += 4
+            save_data["resources"]["money"] -= 100  
+        else:
+            return False
+    elif object_type == "rocket":
+        if save_data["resources"]["metal"] >= 40 and save_data["resources"]["minerals"] >= 20 and save_data["resources"]["water"] >= 20 and save_data["resources"]["money"] >= 200:
+            save_data["resources"]["metal"] -= 40
+            save_data["resources"]["minerals"] -= 20
+            save_data["resources"]["water"] -= 20
+            save_data["resources"]["money"] -= 200
+        else:
+            return False
+    with open(save_path, "w", encoding="utf-8") as save_file:
+        json.dump(save_data, save_file, indent=2)
+    return True
 
 #setzt die buttonkollision für die szenen um
 def on_mouse_down(pos, button):

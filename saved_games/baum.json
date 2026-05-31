@@ -1,7 +1,7 @@
 {
-  "name": "alinchen_bienchen",
-  "created": "20260531091143",
-  "seed": 242961,
+  "name": "baum",
+  "created": "20260531093532",
+  "seed": 52913,
   "resources": {
     "electricity": 50,
     "metal": 40,
@@ -39,15 +39,11 @@
     ]
   },
   "solar": {
-    "number": 17,
+    "number": 16,
     "extra_pos": [
       [
         0,
-        4
-      ],
-      [
-        0,
-        3
+        0
       ]
     ]
   },
@@ -55,19 +51,14 @@
     "number": 2,
     "extra_pos": [
       [
-        4,
-        4
+        7,
+        3
       ]
     ]
   },
   "rocket": {
-    "number": 2,
-    "extra_pos": [
-      [
-        6,
-        9
-      ]
-    ]
+    "number": 1,
+    "extra_pos": []
   },
   "progress": {},
   "placed_objects": [
@@ -200,44 +191,24 @@
       8
     ],
     [
-      4,
-      4
+      0,
+      0
     ],
     [
-      3,
-      4
-    ],
-    [
-      4,
-      3
-    ],
-    [
-      3,
+      7,
       3
     ],
     [
       6,
-      9
+      3
     ],
     [
-      5,
-      9
+      7,
+      2
     ],
     [
       6,
-      8
-    ],
-    [
-      5,
-      8
-    ],
-    [
-      0,
-      4
-    ],
-    [
-      0,
-      3
+      2
     ]
   ]
 }

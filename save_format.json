@@ -3,7 +3,7 @@
   "created": 0,
   "seed": 0,
   "resources": {
-    "electricity": 60,
+    "electricity": 50,
     "metal": 40,
     "minerals": 85,
     "water": 20,
@@ -12,7 +12,7 @@
     "science": 0
   },
   "resource_max": {
-    "electricity": 50,
+    "electricity": 60,
     "metal": 100,
     "minerals": 100,
     "water": 100,
