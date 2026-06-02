@@ -57,6 +57,7 @@ tiles = {
 solar = pygame.image.load("images/solar.png")
 base = pygame.image.load("images/base.png")
 rocket = pygame.image.load("images/rocket.png")
+miner = pygame.image.load("images/miner.png")
 
 
 #-------------------------------------------
@@ -932,6 +933,7 @@ class GameHomeBase(GameScene):
         self.solar_scaled = pygame.transform.scale(solar, (128, 128))
         self.base_scaled = pygame.transform.scale(base, (128, 128))
         self.rocket_scaled = pygame.transform.scale(rocket, (256, 256))
+        self.miner_scaled = pygame.transform.scale(miner, (256, 256))
 
         self.controlls = load_save("controlls.json")
 
@@ -962,7 +964,14 @@ class GameHomeBase(GameScene):
                 "icon": self.rocket_scaled,
                 "save_key": "rocket",
                 "offset": (-TILE_WIDTH, -TILE_HEIGHT)
+            },
+            "miner": {
+                "label": "Miner",
+                "icon": self.miner_scaled,
+                "save_key": "miner",
+                "offset": (-TILE_WIDTH, -TILE_HEIGHT * 3 // 2)
             }
+
         }
 
         self.placed_objects: dict[str, list[tuple[int, int]]] = self.load_saved_placements()
@@ -980,6 +989,7 @@ class GameHomeBase(GameScene):
         self.solar_scaled = pygame.transform.scale(solar, (128, 128))
         self.base_scaled = pygame.transform.scale(base, (128, 128))
         self.rocket_scaled = pygame.transform.scale(rocket, (256, 256))
+        self.miner_scaled = pygame.transform.scale(miner, (256, 256))
 
         self.controlls = load_save("controlls.json")
 
@@ -1367,11 +1377,9 @@ def koordinaten_netz(eckpunkte: list) -> list:
     return eckpunkte[0][0], eckpunkte[0][1], eckpunkte[1][0], eckpunkte[1][1]
 
 def calculate_placementspace(object_type: str, x: int, y: int) -> list[list[int, int]]:
-    if object_type == "solar":
+    if object_type == "solar" or object_type == "miner":
         return [[x, y]]
-    elif object_type == "base":
-        return [[x, y], [x - 1, y], [x, y - 1], [x - 1, y - 1]]
-    elif object_type == "rocket":
+    elif object_type == "base" or object_type == "rocket":
         return [[x, y], [x - 1, y], [x, y - 1], [x - 1, y - 1]]
 
 

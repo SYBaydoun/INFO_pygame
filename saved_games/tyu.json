@@ -1,14 +1,14 @@
 {
-  "name": "yuio",
-  "created": "20260602123554",
-  "seed": 666606,
+  "name": "tyu",
+  "created": "20260602123953",
+  "seed": 404349,
   "resources": {
     "electricity": 50,
-    "metal": 0,
-    "minerals": 65,
-    "water": 0,
+    "metal": 40,
+    "minerals": 85,
+    "water": 20,
     "communication": 55,
-    "money": 9800,
+    "money": 10000,
     "science": 0
   },
   "resource_max": {
@@ -47,13 +47,8 @@
     "extra_pos": []
   },
   "rocket": {
-    "number": 2,
-    "extra_pos": [
-      [
-        5,
-        5
-      ]
-    ]
+    "number": 1,
+    "extra_pos": []
   },
   "progress": {},
   "placed_objects": [
@@ -184,35 +179,6 @@
     [
       3,
       8
-    ],
-    [
-      5,
-      5
-    ],
-    [
-      4,
-      5
-    ],
-    [
-      5,
-      4
-    ],
-    [
-      4,
-      4
-    ],
-    [
-      0,
-      0
     ]
-  ],
-  "miner": {
-    "number": 1,
-    "extra_pos": [
-      [
-        0,
-        0
-      ]
-    ]
-  }
+  ]
 }
