@@ -1221,13 +1221,13 @@ class GameHomeBase(GameScene):
             gm = self.controlls.get('game_base_mechanics', {})
 
             # move with the mapped keys (one tile per frame while held)
-            if getattr(keyboard, gm.get('left', ''), False) and (self.placing['x'] + 1, self.placing['y']) in self.unlocked_area:
+            if getattr(keyboard, gm.get('left', ''), False) and ((self.placing['x'] + 1, self.placing['y']) in self.unlocked_area or (self.placing["type"] == "miner" and (self.placing['x'], self.placing['y']) in self.unlocked_area)):
                 self.placing['x'] += 1
-            if getattr(keyboard, gm.get('right', ''), False) and (self.placing['x'] - 1, self.placing['y']) in self.unlocked_area:
+            if getattr(keyboard, gm.get('right', ''), False) and ((self.placing['x'] - 1, self.placing['y']) in self.unlocked_area or (self.placing["type"] == "miner" and (self.placing['x'], self.placing['y']) in self.unlocked_area)):
                 self.placing['x'] -= 1
-            if getattr(keyboard, gm.get('up', ''), False) and (self.placing['x'], self.placing['y'] + 1) in self.unlocked_area:
+            if getattr(keyboard, gm.get('up', ''), False) and ((self.placing['x'], self.placing['y'] + 1) in self.unlocked_area or (self.placing["type"] == "miner" and (self.placing['x'], self.placing['y']) in self.unlocked_area)):
                 self.placing['y'] += 1
-            if getattr(keyboard, gm.get('down', ''), False) and (self.placing['x'], self.placing['y'] - 1) in self.unlocked_area:
+            if getattr(keyboard, gm.get('down', ''), False) and ((self.placing['x'], self.placing['y'] - 1) in self.unlocked_area or (self.placing["type"] == "miner" and (self.placing['x'], self.placing['y']) in self.unlocked_area)):
                 self.placing['y'] -= 1
 
             # place the object when pressing the place key
