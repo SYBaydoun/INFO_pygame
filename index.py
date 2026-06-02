@@ -61,6 +61,24 @@ base = pygame.image.load("images/base.png")
 rocket = pygame.image.load("images/rocket.png")
 miner = pygame.image.load("images/miner.png")
 
+save_path = None
+save_data = {}
+controlls = {}
+stats_change_libary = {
+    "solar": {"resources": {"electricity": 4, "metal": -10, "minerals": -5, "water": 0, "communication": 0, "money": -100, "science": 0},
+              "resource_max": {"electricity": 4, "metal": 0, "minerals": 0, "water": 0, "communication": 0, "money": 0, "science": 0},
+              },
+    "base": {"resources": {"electricity": -2, "metal": -30, "minerals": -10, "water": -10, "communication": 0, "money": -200, "science": 0},
+             "resource_max": {"electricity": 0, "metal": 20, "minerals": 4, "water": 0, "communication": 0, "money": 0, "science": 0},
+             },
+    "rocket": {"resources": {"electricity": -10, "metal": -50, "minerals": -20, "water": -50, "communication": 0, "money": -500, "science": 0},
+               "resource_max": {"electricity": 0, "metal": 0, "minerals": 0, "water": 0, "communication": 0, "money": 0, "science": 0},
+               },
+    "miner": {"resources": {"electricity": -10, "metal": -20, "minerals": 0, "water": -10, "communication": 0, "money": -150, "science": 0},
+              "resource_max": {"electricity": 0, "metal": 0, "minerals": 0, "water": 0, "communication": 0, "money": 0, "science": 0},
+              },
+}
+
 
 #-------------------------------------------
 #Scenen Manager
@@ -634,6 +652,7 @@ class ContinueGame(MenuSzene):
         if self.scrollable_ui:
             result = self.scrollable_ui.on_click(pos)
             if result:
+                print()
                 manager.change_scene(GameHomeBase(save_path=os.path.join("saved_games", result)))
 
     def update(self):
@@ -685,38 +704,43 @@ class GameScene():
         if not self.save_path:
             raise ValueError("GameScene requires a valid save_path")
 
-        state = load_save(self.save_path)
-        self.noise = OpenSimplex(state["seed"])
+        global save_data
+        current_global_save_path = globals().get("save_path")
+        if not save_data or self.save_path != current_global_save_path:
+            save_data = load_save(self.save_path)
+            globals()["save_path"] = self.save_path
+
+        self.noise = OpenSimplex(save_data["seed"])
 
         self.resources = {
             "electricity": {
-                "current": state["resources"]["electricity"],
-                "max": state["resource_max"]["electricity"]
+                "current": save_data["resources"]["electricity"],
+                "max": save_data["resource_max"]["electricity"]
             },
 
             "metal": {
-                "current": state["resources"]["metal"],
-                "max": state["resource_max"]["metal"]
+                "current": save_data["resources"]["metal"],
+                "max": save_data["resource_max"]["metal"]
             },
 
             "minerals": {
-                "current": state["resources"]["minerals"],
-                "max": state["resource_max"]["minerals"]
+                "current": save_data["resources"]["minerals"],
+                "max": save_data["resource_max"]["minerals"]
             },
 
             "water": {
-                "current": state["resources"]["water"],
-                "max": state["resource_max"]["water"]
+                "current": save_data["resources"]["water"],
+                "max": save_data["resource_max"]["water"]
             },
 
             "communication": {
-                "current": state["resources"]["communication"],
-                "max": state["resource_max"]["communication"]
+                "current": save_data["resources"]["communication"],
+                "max": save_data["resource_max"]["communication"]
             }
         }
 
-        self.money = state["resources"]["money"]
-        self.science = state["resources"]["science"]
+        self.money = save_data["resources"]["money"]
+        self.science = save_data["resources"]["science"]
 
         self.ui_y = HEIGHT - 50
 
@@ -743,19 +767,19 @@ class GameScene():
         }
 
     def refresh_resources(self):
-        state = load_save(self.save_path)
-        self.resources["electricity"]["current"] = state["resources"]["electricity"]
-        self.resources["electricity"]["max"] = state["resource_max"]["electricity"]
-        self.resources["metal"]["current"] = state["resources"]["metal"]
-        self.resources["metal"]["max"] = state["resource_max"]["metal"]
-        self.resources["minerals"]["current"] = state["resources"]["minerals"]
-        self.resources["minerals"]["max"] = state["resource_max"]["minerals"]
-        self.resources["water"]["current"] = state["resources"]["water"]
-        self.resources["water"]["max"] = state["resource_max"]["water"]
-        self.resources["communication"]["current"] = state["resources"]["communication"]
-        self.resources["communication"]["max"] = state["resource_max"]["communication"]
-        self.money = state["resources"]["money"]
-        self.science = state["resources"]["science"]
+        global save_data
+        self.resources["electricity"]["current"] = save_data["resources"]["electricity"]
+        self.resources["electricity"]["max"] = save_data["resource_max"]["electricity"]
+        self.resources["metal"]["current"] = save_data["resources"]["metal"]
+        self.resources["metal"]["max"] = save_data["resource_max"]["metal"]
+        self.resources["minerals"]["current"] = save_data["resources"]["minerals"]
+        self.resources["minerals"]["max"] = save_data["resource_max"]["minerals"]
+        self.resources["water"]["current"] = save_data["resources"]["water"]
+        self.resources["water"]["max"] = save_data["resource_max"]["water"]
+        self.resources["communication"]["current"] = save_data["resources"]["communication"]
+        self.resources["communication"]["max"] = save_data["resource_max"]["communication"]
+        self.money = save_data["resources"]["money"]
+        self.science = save_data["resources"]["science"]
 
 
     def draw_resource_bar(self, x, y, resource):
@@ -937,7 +961,7 @@ class GameHomeBase(GameScene):
         self.rocket_scaled = pygame.transform.scale(rocket, (256, 256))
         self.miner_scaled = pygame.transform.scale(miner, (256, 256))
 
-        self.controlls = load_save("controlls.json")
+        self.controlls = controlls
 
         self.unlocked_area = self.unlocked_area_border_floodsearch(0, 0, area=True)
         self.unlocked_area_border = self.unlocked_area_border_floodsearch(0, 0, area=False)
@@ -996,7 +1020,7 @@ class GameHomeBase(GameScene):
         self.rocket_scaled = pygame.transform.scale(rocket, (256, 256))
         self.miner_scaled = pygame.transform.scale(miner, (256, 256))
 
-        self.controlls = load_save("controlls.json")
+        self.controlls = controlls
 
         for tile_id, image_name in tiles.items():
 
@@ -1008,26 +1032,28 @@ class GameHomeBase(GameScene):
             )
 
     def start_placement(self, object_type: str):
-        self.placing = {"type": object_type, "x": self.camera_x, "y": self.camera_y}
+        self.placing = {
+            "type": object_type,
+            "x": int(self.camera_x),
+            "y": int(self.camera_y)
+        }
         self.build_menu.close()
 
     def load_saved_placements(self) -> dict[str, list[tuple[int, int]]]:
+        global save_data
         placements: dict[str, list[tuple[int, int]]] = {}
         for object_type, info in self.buildable_types.items():
-            try:
-                saved = attr_json(self.save_path, info["save_key"], "extra_pos")
-                placements[object_type] = [tuple(pos) for pos in saved]
-            except Exception:
-                placements[object_type] = []
+            saved = save_data.get(info["save_key"], {}).get("extra_pos", []) if save_data else []
+            placements[object_type] = [tuple(pos) for pos in saved]
         return placements
 
     def save_placement(self, object_type: str, x: int, y: int):
         save_key = self.buildable_types[object_type]["save_key"]
 
-        if not module_resource_manipulation(self.save_path, save_key):
+        if not module_resource_manipulation(save_key):
             return
 
-        save_data = load_save(self.save_path)
+        global save_data
 
         if save_key not in save_data:
             save_data[save_key] = {"number": 0, "extra_pos": []}
@@ -1046,14 +1072,11 @@ class GameHomeBase(GameScene):
         
         save_data["placed_objects"].extend(calculate_placementspace(object_type, x, y))
 
-        with open(self.save_path, "w", encoding="utf-8") as save_file:
-            json.dump(save_data, save_file, indent=2)
-
         self.refresh_resources()
 
     def get_height(self, x: int, y: int) -> int:
-        save_data = load_save(self.save_path)
-        progress_tuples = [tuple(pos) if isinstance(pos, list) else pos for pos in save_data.get("progress", [])]
+        global save_data
+        progress_tuples = [tuple(pos) if isinstance(pos, list) else pos for pos in save_data.get("progress", [])] if save_data else []
         
         inside_base = (
             0 <= x < MAP_SIZE and
@@ -1061,6 +1084,8 @@ class GameHomeBase(GameScene):
         )
 
         if inside_base:
+            if (x, y) in progress_tuples:
+                return 0
             if (5, 5) == (x, y):
                 return 1
             return 0
@@ -1092,7 +1117,13 @@ class GameHomeBase(GameScene):
                 return 0
         else:
             return target
-    def unlocked_area_border_floodsearch(self, x: int = 0, y: int = 0, border: list[tuple[int, int]] = [], unlocked: list[tuple[int, int]] = [(0, 0)], area: bool = False) -> list[tuple[int, int]]:
+    def unlocked_area_border_floodsearch(self, x: int = 0, y: int = 0, border: list[tuple[int, int]] = None, unlocked: list[tuple[int, int]] = None, area: bool = False) -> list[tuple[int, int]]:
+        # Initialize fresh lists if not provided (avoids mutable default argument bug)
+        if border is None:
+            border = []
+        if unlocked is None:
+            unlocked = [(0, 0)]
+        
         current_height = self.get_height(x, y)
 
         if current_height != 0:
@@ -1117,31 +1148,47 @@ class GameHomeBase(GameScene):
         return unlocked if area else border
     
     def check_mining(self, save_path: str):
-        save_data = load_save(self.save_path)
-        mining_positions = save_data.get("mining_position", [])
-        for element in mining_positions:
+        global save_data
+        mining_positions = save_data.get("mining_position", []) if save_data else []
+        for element in list(mining_positions):
             if element[2] <= time.time():
                 save_data["mining_position"].remove(element)
                 save_data["miner"]["number"] -= 1
                 save_data["miner"]["extra_pos"].remove([element[0], element[1]])
                 save_data["placed_objects"].remove([element[0], element[1]])
                 save_data["progress"].append([element[0], element[1]])
+                
+                # Remove miner from placed_objects dict for rendering
+                if "miner" in self.placed_objects and (element[0], element[1]) in self.placed_objects["miner"]:
+                    self.placed_objects["miner"].remove((element[0], element[1]))
+                
                 metal_gain = 0
                 for i in range(1, element[3]):
-                    metal_gain += random.randint(5, 20)
+                    metal_gain += random.randint(20, 50)
                 if save_data["resource_max"]["metal"] >= save_data["resources"]["metal"] + metal_gain:
                     save_data["resources"]["metal"] += metal_gain
                 else:
                     save_data["resources"]["metal"] = save_data["resource_max"]["metal"]
-                
+                mineral_gain = 0
+                for i in range(1, element[3]):
+                    mineral_gain += random.randint(0, 5)
+                if save_data["resource_max"]["minerals"] >= save_data["resources"]["minerals"] + mineral_gain:
+                    save_data["resources"]["minerals"] += mineral_gain
+                else:
+                    save_data["resources"]["minerals"] = save_data["resource_max"]["minerals"]
+                water_gain = 0
+                for i in range(1, element[3]):
+                    water_gain += random.randint(0, 7)
+                if save_data["resource_max"]["water"] >= save_data["resources"]["water"] + water_gain:
+                    save_data["resources"]["water"] += water_gain
+                else:
+                    save_data["resources"]["water"] = save_data["resource_max"]["water"]
                 print(f"Mining at ({element[0]}, {element[1]}) completed!")
-                with open(self.save_path, "w", encoding="utf-8") as save_file:
-                    json.dump(save_data, save_file, indent=2)
+                self.refresh_resources()
+                self.unlocked_area = self.unlocked_area_border_floodsearch(area=True)
+                self.unlocked_area_border = self.unlocked_area_border_floodsearch()
             else:
                 continue
-
-        with open(self.save_path, "w", encoding="utf-8") as save_file:
-            json.dump(save_data, save_file, indent=2)
 
 
     def iso_to_screen(self, x: int, y: int) -> float:
@@ -1189,7 +1236,7 @@ class GameHomeBase(GameScene):
                             )
                         )
         
-        eckpunkte = attr_json(self.save_path, "start_modul_pos", "solar")
+        eckpunkte = save_data["start_modul_pos"]["solar"]
         x_min, y_min, x_max, y_max = koordinaten_netz(eckpunkte)
         
         for x in range(x_min, x_max):
@@ -1234,11 +1281,11 @@ class GameHomeBase(GameScene):
                     pass
                 screen.surface.blit(icon, (screen_x + offset_x, screen_y + offset_y))
 
-        x, y = attr_json(self.save_path, "start_modul_pos", "rocket")
+        x, y = save_data["start_modul_pos"]["rocket"]
         screen_x, screen_y = self.iso_to_screen(x, y)
         screen.surface.blit(self.rocket_scaled, (screen_x - TILE_WIDTH, screen_y - TILE_HEIGHT))
         
-        x, y = attr_json(self.save_path, "start_modul_pos", "base")
+        x, y = save_data["start_modul_pos"]["base"]
         screen_x, screen_y = self.iso_to_screen(x, y)
         screen.surface.blit(self.base_scaled, (screen_x - TILE_WIDTH // 2, screen_y - TILE_HEIGHT // 2))
 
@@ -1252,16 +1299,18 @@ class GameHomeBase(GameScene):
         # placement mode handling
         if self.placing is not None:
             gm = self.controlls.get('game_base_mechanics', {})
+            current_x = int(self.placing['x'])
+            current_y = int(self.placing['y'])
 
             # move with the mapped keys (one tile per frame while held)
             if getattr(keyboard, gm.get('left', ''), False) and ((self.placing['x'] + 1, self.placing['y']) in self.unlocked_area or (self.placing["type"] == "miner" and (self.placing['x'], self.placing['y']) in self.unlocked_area)):
-                self.placing['x'] += 1
+                self.placing['x'] = current_x + 1
             if getattr(keyboard, gm.get('right', ''), False) and ((self.placing['x'] - 1, self.placing['y']) in self.unlocked_area or (self.placing["type"] == "miner" and (self.placing['x'], self.placing['y']) in self.unlocked_area)):
-                self.placing['x'] -= 1
+                self.placing['x'] = current_x - 1
             if getattr(keyboard, gm.get('up', ''), False) and ((self.placing['x'], self.placing['y'] + 1) in self.unlocked_area or (self.placing["type"] == "miner" and (self.placing['x'], self.placing['y']) in self.unlocked_area)):
-                self.placing['y'] += 1
+                self.placing['y'] = current_y + 1
             if getattr(keyboard, gm.get('down', ''), False) and ((self.placing['x'], self.placing['y'] - 1) in self.unlocked_area or (self.placing["type"] == "miner" and (self.placing['x'], self.placing['y']) in self.unlocked_area)):
-                self.placing['y'] -= 1
+                self.placing['y'] = current_y - 1
 
             # place the object when pressing the place key
             if getattr(keyboard, gm.get('place', ''), False) and is_space_free(self.save_path, self.placing['type'], self.placing['x'], self.placing['y']):
@@ -1272,9 +1321,8 @@ class GameHomeBase(GameScene):
                     print(x, y, self.unlocked_area_border)
                     self.placed_objects.setdefault(object_type, []).append((x, y))
                     self.save_placement(object_type, x, y)
-                    self.save_data = load_save(self.save_path)
-                    self.save_data["mining_position"].append((x, y, time.time() + 10 * self.get_height(x, y), self.get_height(x, y)))  # Example: 10 seconds mining time
-                    json.dump(self.save_data, open(self.save_path, "w"), indent=2)
+                    global save_data
+                    save_data["mining_position"].append([x, y, time.time() + 10 * self.get_height(x, y), self.get_height(x, y)])  # Example: 10 seconds mining time
                     self.placing = None
                 elif object_type in self.buildable_types and object_type != "miner":
                     print("yeock")
@@ -1400,38 +1448,49 @@ def new_game_logik(current_scene):
         if filename:
             save_folder = "saved_games"
             os.makedirs(save_folder, exist_ok=True)
-            save_path = os.path.join(save_folder, f"{filename}.json")
+            save_path_ = os.path.join(save_folder, f"{filename}.json")
             counter = 1
-            if os.path.exists(save_path):  
+            if os.path.exists(save_path_):  
                 while True:
                     alt_path = os.path.join(save_folder, f"{filename}_{counter}.json")
                     if not os.path.exists(alt_path):
-                        save_path = alt_path
+                        save_path_ = alt_path
                         break
                     counter += 1
                 filename = f"{filename}_{counter}"
 
             with open("save_format.json", "r", encoding="utf-8") as f:
-                save_data = json.load(f)
-            save_data["name"] = filename
-            save_data["created"] = time.strftime("%Y%m%d%H%M%S", time.gmtime())
-            save_data["seed"] = noise._seed
+                save_data_ = json.load(f)
+            save_data_["name"] = filename
+            save_data_["created"] = time.strftime("%Y%m%d%H%M%S", time.gmtime())
+            save_data_["seed"] = noise._seed
 
-            with open(save_path, "w", encoding="utf-8") as save_file:
-                json.dump(save_data, save_file, indent=2)
+            global save_path
+            global save_data
+            save_path = save_path_
+            save_data = save_data_
+            print(save_path, save_data)
 
-            current_scene.current_save_path = save_path
-            manager.change_scene(GameHomeBase(save_path=save_path))
+            with open(save_path_, "w", encoding="utf-8") as save_file:
+                json.dump(save_data_, save_file, indent=2)
+
+            current_scene.current_save_path = save_path_
+            manager.change_scene(GameHomeBase(save_path=save_path_))
 
 #fortfahren eines games mit json datei
 def continue_game_logik(current_scene):
     save_name = current_scene.input_text.strip()
     if save_name:
         filename = sanitize_filename(save_name)
-        save_path = os.path.join("saved_games", f"{filename}.json")
-        if os.path.exists(save_path):
-            print(f"Continuing game from {save_path}...")
-            manager.change_scene(GameHomeBase(save_path=save_path))
+        save_path_ = os.path.join("saved_games", f"{filename}.json")
+        if os.path.exists(save_path_):
+            print(f"Continuing game from {save_path_}...")
+            global save_path
+            global save_data
+            save_path = save_path_
+            save_data = load_save(save_path)
+            print(save_path, save_data)
+            manager.change_scene(GameHomeBase(save_path=save_path_))
         else:
             print(f"No save file found for: {save_name}")
 
@@ -1439,6 +1498,14 @@ def continue_game_logik(current_scene):
 def load_save(path):
     with open(path, "r", encoding="utf-8") as file:
         return json.load(file)
+
+def write_save_data():
+    global save_path
+    global save_data
+    if save_path and save_data:
+        with open(save_path, "w", encoding="utf-8") as save_file:
+            json.dump(save_data, save_file, indent=2)
+
 controlls = load_save("controlls.json")
 
 #formatiert das attribut für den key vergleich von pygame
@@ -1462,10 +1529,9 @@ def calculate_placementspace(object_type: str, x: int, y: int) -> list[list[int,
 
 
 def is_space_free(save_path: str, object_type: str, x: int, y: int) -> bool:
-    save_data = load_save(save_path)
+    global save_data
     checking_koordinates = calculate_placementspace(object_type, x, y)
-    placed = save_data.get("placed_objects", [])
-    print(placed, checking_koordinates)
+    placed = save_data.get("placed_objects", []) if save_data else []
     for pos in checking_koordinates:
         if pos in placed:
             return False
@@ -1476,8 +1542,10 @@ def is_space_free(save_path: str, object_type: str, x: int, y: int) -> bool:
     # vergleicht die koordinaten
 
 
-def module_resource_manipulation(save_path: str, object_type: str) -> bool:
-    save_data = load_save(save_path)
+def module_resource_manipulation(object_type: str) -> bool:
+    global save_data
+    if not save_data:
+        return False
     if object_type == "solar":
         if save_data["resources"]["money"] >= 100:
             save_data["resources"]["electricity"] += 4
@@ -1504,8 +1572,6 @@ def module_resource_manipulation(save_path: str, object_type: str) -> bool:
             save_data["resources"]["money"] -= 200
         else:
             return False
-    with open(save_path, "w", encoding="utf-8") as save_file:
-        json.dump(save_data, save_file, indent=2)
     return True
 
 #setzt die buttonkollision für die szenen um
@@ -1525,6 +1591,8 @@ def on_key_down(key, mod, unicode):
 
     if isinstance(scene, GameScene):
         if key == key_attr('extra', 'open_menu'):
+            if save_path and save_data:
+                write_save_data()
             manager.change_scene(Menu())
         elif key == key_attr('extra', 'toggle_debug'):
             # toggle on-screen debug overlay instead of printing to terminal
@@ -1532,6 +1600,14 @@ def on_key_down(key, mod, unicode):
                 manager.debug_overlay = not getattr(manager, 'debug_overlay', False)
             except Exception:
                 manager.debug_overlay = True
+        elif key == key_attr('extra', 'screenshot'):
+            timestamp = time.strftime("%Y%m%d-%H%M%S")
+            filename = f"screenshot_{timestamp}.png"
+            pygame.image.save(screen.surface, filename)
+            print(f"Screenshot saved as {filename}")
+        elif key == key_attr('extra', 'quick_save'):
+            if save_path and save_data:
+                write_save_data()
         elif key == key_attr('game_scene_switch', 'fwd'):
             if isinstance(scene, GameHomeBase):
                 manager.change_scene(GameSketch(save_path=scene.save_path))

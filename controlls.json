@@ -8,7 +8,9 @@
     },
     "extra": {
         "open_menu": "K_ESCAPE",
-        "toggle_debug": "K_F3"
+        "toggle_debug": "K_F3", 
+        "quick_save": "K_F1",
+        "screenshot": "K_F2"
     },
     "menu": {
         "input_back": "K_BACKSPACE",
