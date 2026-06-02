@@ -974,7 +974,7 @@ class GameHomeBase(GameScene):
                 "label": "Miner",
                 "icon": self.miner_scaled,
                 "save_key": "miner",
-                "offset": (-TILE_WIDTH, -TILE_HEIGHT * 3 // 2)
+                "offset": (-TILE_WIDTH, -TILE_HEIGHT * 7 // 4)
             }
 
         }
@@ -1179,10 +1179,11 @@ class GameHomeBase(GameScene):
             icon = info["icon"]
             offset_x, offset_y = info.get("offset", (-TILE_WIDTH // 2, -TILE_HEIGHT // 2))
             for sx, sy in positions:
+                h = self.get_height(sx, sy)
                 screen_x, screen_y = self.iso_to_screen(sx, sy)
                 screen.surface.blit(
                     icon,
-                    (screen_x + offset_x, screen_y + offset_y)
+                    (screen_x + offset_x, screen_y + offset_y - h * HEIGHT_STEP)
                 )
 
         # draw preview (transparent) if placing
@@ -1235,10 +1236,16 @@ class GameHomeBase(GameScene):
                 object_type = self.placing['type']
                 x = int(self.placing['x'])
                 y = int(self.placing['y'])
-                if object_type in self.buildable_types:
+                if object_type == "miner" and object_type in self.buildable_types and (x, y) in self.unlocked_area_border:
+                    print(x, y, self.unlocked_area_border)
                     self.placed_objects.setdefault(object_type, []).append((x, y))
                     self.save_placement(object_type, x, y)
-                self.placing = None
+                    self.placing = None
+                elif object_type in self.buildable_types and object_type != "miner":
+                    print("yeock")
+                    self.placed_objects.setdefault(object_type, []).append((x, y))
+                    self.save_placement(object_type, x, y)
+                    self.placing = None
 
         # camera movement (original behaviour)
 
