@@ -44,7 +44,9 @@ HEIGHT_STEP = 52 #<- nicht 64, damit dahinterliegende niedrigere blöcke gesehen
 tilemap = [
     [0 for x in range(MAP_SIZE)] for y in range(MAP_SIZE)
 ]
-
+print(tilemap)
+tilemap[5][5] = 1
+print(tilemap)
 #die verschiedenen höhen
 tiles = {
     0: "surface_bottom",
@@ -937,6 +939,9 @@ class GameHomeBase(GameScene):
 
         self.controlls = load_save("controlls.json")
 
+        self.unlocked_area = self.unlocked_area_border_floodsearch(0, 0, area=True)
+        self.unlocked_area_border = self.unlocked_area_border_floodsearch(0, 0, area=False)
+
         for tile_id, image_name in tiles.items():
 
             original = images.load(image_name)
@@ -1054,6 +1059,8 @@ class GameHomeBase(GameScene):
         )
 
         if inside_base:
+            if (5, 5) == (x, y):
+                return 1
             return 0
 
         n = self.noise.noise2(x * 0.03, y * 0.03)
@@ -1079,6 +1086,31 @@ class GameHomeBase(GameScene):
             return int(target * t)
 
         return target
+    def unlocked_area_border_floodsearch(self, x: int = 0, y: int = 0, border: list[tuple[int, int]] = [], unlocked: list[tuple[int, int]] = [(0, 0)], area: bool = False) -> list[tuple[int, int]]:
+        current_height = self.get_height(x, y)
+
+        if current_height != 0:
+            print(f"Koordinate ({x}, {y}) ist kein Level 0, sondern Level {current_height}")
+            return
+
+        neighbors = [
+            (x + 1, y),
+            (x, y + 1),
+            (x - 1, y),
+            (x, y - 1)
+        ]
+        for nx, ny in neighbors:
+            if self.get_height(nx, ny) != 0 and (nx, ny) not in border and nx >= 0 and ny >= 0:
+                border.append((nx, ny))
+
+            elif self.get_height(nx, ny) == 0 and (nx, ny) not in unlocked and nx >= 0 and ny >= 0:
+                print(f"Koordinate ({nx}, {ny}) ist ebenfalls Level 0")
+                unlocked.append((nx, ny))
+                print(unlocked, len(unlocked), border, len(border))
+                self.unlocked_area_border_floodsearch(nx, ny, border, unlocked)
+        return unlocked if area else border
+
+
 
     def iso_to_screen(self, x: int, y: int) -> float:
 
@@ -1189,13 +1221,13 @@ class GameHomeBase(GameScene):
             gm = self.controlls.get('game_base_mechanics', {})
 
             # move with the mapped keys (one tile per frame while held)
-            if getattr(keyboard, gm.get('left', ''), False):
+            if getattr(keyboard, gm.get('left', ''), False) and (self.placing['x'] + 1, self.placing['y']) in self.unlocked_area:
                 self.placing['x'] += 1
-            if getattr(keyboard, gm.get('right', ''), False) and self.placing['x'] > 0:
+            if getattr(keyboard, gm.get('right', ''), False) and (self.placing['x'] - 1, self.placing['y']) in self.unlocked_area:
                 self.placing['x'] -= 1
-            if getattr(keyboard, gm.get('up', ''), False):
+            if getattr(keyboard, gm.get('up', ''), False) and (self.placing['x'], self.placing['y'] + 1) in self.unlocked_area:
                 self.placing['y'] += 1
-            if getattr(keyboard, gm.get('down', ''), False) and self.placing['y'] > 0:
+            if getattr(keyboard, gm.get('down', ''), False) and (self.placing['x'], self.placing['y'] - 1) in self.unlocked_area:
                 self.placing['y'] -= 1
 
             # place the object when pressing the place key
@@ -1210,7 +1242,10 @@ class GameHomeBase(GameScene):
 
         # camera movement (original behaviour)
 
-        if any(getattr(keyboard, key) for key in self.controlls['movement']['boost']):
+        if any(getattr(keyboard, key) for key in self.controlls['movement']['boost']):    
+            a = self.unlocked_area_border_floodsearch(0, 0, area=False)
+            print("-------------------")
+            print(a,len(a))
             boost = 3
         else:
             boost = 1
