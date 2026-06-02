@@ -742,12 +742,18 @@ class GameScene():
     def refresh_resources(self):
         state = load_save(self.save_path)
         self.resources["electricity"]["current"] = state["resources"]["electricity"]
+        self.resources["electricity"]["max"] = state["resource_max"]["electricity"]
         self.resources["metal"]["current"] = state["resources"]["metal"]
+        self.resources["metal"]["max"] = state["resource_max"]["metal"]
         self.resources["minerals"]["current"] = state["resources"]["minerals"]
+        self.resources["minerals"]["max"] = state["resource_max"]["minerals"]
         self.resources["water"]["current"] = state["resources"]["water"]
+        self.resources["water"]["max"] = state["resource_max"]["water"]
         self.resources["communication"]["current"] = state["resources"]["communication"]
+        self.resources["communication"]["max"] = state["resource_max"]["communication"]
         self.money = state["resources"]["money"]
         self.science = state["resources"]["science"]
+
 
     def draw_resource_bar(self, x, y, resource):
 

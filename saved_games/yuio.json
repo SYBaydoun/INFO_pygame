@@ -1,14 +1,14 @@
 {
-  "name": "alinchen_bienchen",
-  "created": "20260531091143",
-  "seed": 242961,
+  "name": "yuio",
+  "created": "20260602123554",
+  "seed": 666606,
   "resources": {
     "electricity": 50,
-    "metal": 40,
-    "minerals": 85,
-    "water": 20,
+    "metal": 0,
+    "minerals": 65,
+    "water": 0,
     "communication": 55,
-    "money": 10000,
+    "money": 9800,
     "science": 0
   },
   "resource_max": {
@@ -39,33 +39,19 @@
     ]
   },
   "solar": {
-    "number": 17,
-    "extra_pos": [
-      [
-        0,
-        4
-      ],
-      [
-        0,
-        3
-      ]
-    ]
+    "number": 15,
+    "extra_pos": []
   },
   "base": {
-    "number": 2,
-    "extra_pos": [
-      [
-        4,
-        4
-      ]
-    ]
+    "number": 1,
+    "extra_pos": []
   },
   "rocket": {
     "number": 2,
     "extra_pos": [
       [
-        6,
-        9
+        5,
+        5
       ]
     ]
   },
@@ -200,44 +186,20 @@
       8
     ],
     [
-      4,
-      4
-    ],
-    [
-      3,
-      4
+      5,
+      5
     ],
     [
       4,
-      3
-    ],
-    [
-      3,
-      3
-    ],
-    [
-      6,
-      9
+      5
     ],
     [
       5,
-      9
-    ],
-    [
-      6,
-      8
-    ],
-    [
-      5,
-      8
-    ],
-    [
-      0,
       4
     ],
     [
-      0,
-      3
+      4,
+      4
     ]
   ]
 }

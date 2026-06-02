@@ -1,18 +1,18 @@
 {
   "name": "test",
-  "created": "20260531093300",
-  "seed": 645093,
+  "created": "20260602123522",
+  "seed": 58639,
   "resources": {
-    "electricity": 58,
+    "electricity": 50,
     "metal": 0,
     "minerals": 65,
     "water": 0,
     "communication": 55,
-    "money": 9600,
+    "money": 9800,
     "science": 0
   },
   "resource_max": {
-    "electricity": 68,
+    "electricity": 60,
     "metal": 100,
     "minerals": 100,
     "water": 100,
@@ -39,36 +39,18 @@
     ]
   },
   "solar": {
-    "number": 18,
-    "extra_pos": [
-      [
-        0,
-        0
-      ],
-      [
-        0,
-        4
-      ],
-      [
-        0,
-        2
-      ]
-    ]
+    "number": 15,
+    "extra_pos": []
   },
   "base": {
-    "number": 2,
-    "extra_pos": [
-      [
-        7,
-        5
-      ]
-    ]
+    "number": 1,
+    "extra_pos": []
   },
   "rocket": {
     "number": 2,
     "extra_pos": [
       [
-        5,
+        6,
         4
       ]
     ]
@@ -204,22 +186,6 @@
       8
     ],
     [
-      0,
-      0
-    ],
-    [
-      7,
-      5
-    ],
-    [
-      6,
-      5
-    ],
-    [
-      7,
-      4
-    ],
-    [
       6,
       4
     ],
@@ -228,24 +194,12 @@
       4
     ],
     [
-      4,
-      4
+      6,
+      3
     ],
     [
       5,
       3
-    ],
-    [
-      4,
-      3
-    ],
-    [
-      0,
-      4
-    ],
-    [
-      0,
-      2
     ]
   ]
 }
