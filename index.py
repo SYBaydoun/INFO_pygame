@@ -44,9 +44,7 @@ HEIGHT_STEP = 52 #<- nicht 64, damit dahinterliegende niedrigere blöcke gesehen
 tilemap = [
     [0 for x in range(MAP_SIZE)] for y in range(MAP_SIZE)
 ]
-print(tilemap)
-tilemap[5][5] = 1
-print(tilemap)
+
 #die verschiedenen höhen
 tiles = {
     0: "surface_bottom",
@@ -652,7 +650,6 @@ class ContinueGame(MenuSzene):
         if self.scrollable_ui:
             result = self.scrollable_ui.on_click(pos)
             if result:
-                print()
                 manager.change_scene(GameHomeBase(save_path=os.path.join("saved_games", result)))
 
     def update(self):
@@ -1127,7 +1124,6 @@ class GameHomeBase(GameScene):
         current_height = self.get_height(x, y)
 
         if current_height != 0:
-            print(f"Koordinate ({x}, {y}) ist kein Level 0, sondern Level {current_height}")
             return
 
         neighbors = [
@@ -1141,9 +1137,7 @@ class GameHomeBase(GameScene):
                 border.append((nx, ny))
 
             elif self.get_height(nx, ny) == 0 and (nx, ny) not in unlocked and nx >= 0 and ny >= 0:
-                print(f"Koordinate ({nx}, {ny}) ist ebenfalls Level 0")
                 unlocked.append((nx, ny))
-                print(unlocked, len(unlocked), border, len(border))
                 self.unlocked_area_border_floodsearch(nx, ny, border, unlocked)
         return unlocked if area else border
     
@@ -1183,7 +1177,6 @@ class GameHomeBase(GameScene):
                     save_data["resources"]["water"] += water_gain
                 else:
                     save_data["resources"]["water"] = save_data["resource_max"]["water"]
-                print(f"Mining at ({element[0]}, {element[1]}) completed!")
                 self.refresh_resources()
                 self.unlocked_area = self.unlocked_area_border_floodsearch(area=True)
                 self.unlocked_area_border = self.unlocked_area_border_floodsearch()
@@ -1318,14 +1311,12 @@ class GameHomeBase(GameScene):
                 x = int(self.placing['x'])
                 y = int(self.placing['y'])
                 if object_type == "miner" and object_type in self.buildable_types and (x, y) in self.unlocked_area_border:
-                    print(x, y, self.unlocked_area_border)
                     self.placed_objects.setdefault(object_type, []).append((x, y))
                     self.save_placement(object_type, x, y)
                     global save_data
                     save_data["mining_position"].append([x, y, time.time() + 10 * self.get_height(x, y), self.get_height(x, y)])  # Example: 10 seconds mining time
                     self.placing = None
                 elif object_type in self.buildable_types and object_type != "miner":
-                    print("yeock")
                     self.placed_objects.setdefault(object_type, []).append((x, y))
                     self.save_placement(object_type, x, y)
                     self.placing = None
@@ -1333,9 +1324,6 @@ class GameHomeBase(GameScene):
         # camera movement (original behaviour)
 
         if any(getattr(keyboard, key) for key in self.controlls['movement']['boost']):    
-            a = self.unlocked_area_border_floodsearch(0, 0, area=False)
-            print("-------------------")
-            print(a,len(a))
             boost = 3
         else:
             boost = 1
@@ -1611,23 +1599,17 @@ def on_key_down(key, mod, unicode):
         elif key == key_attr('game_scene_switch', 'fwd'):
             if isinstance(scene, GameHomeBase):
                 manager.change_scene(GameSketch(save_path=scene.save_path))
-                print(scene)
             elif isinstance(scene, GameSketch):
                 manager.change_scene(GameMap(save_path=scene.save_path))
-                print(scene)
             elif isinstance(scene, GameMap):
                 manager.change_scene(GameHomeBase(save_path=scene.save_path))
-                print(scene)
         elif key == key_attr('game_scene_switch', 'bck'):
             if isinstance(scene, GameHomeBase):
                 manager.change_scene(GameMap(save_path=scene.save_path))
-                print(scene)
             elif isinstance(scene, GameSketch):
                 manager.change_scene(GameHomeBase(save_path=scene.save_path))
-                print(scene)
             elif isinstance(scene, GameMap):
                 manager.change_scene(GameSketch(save_path=scene.save_path))
-                print(scene)
         elif key == key_attr('game_scene_switch', 'base') and not isinstance(scene, GameHomeBase):
             manager.change_scene(GameHomeBase(save_path=scene.save_path))
         elif key == key_attr('game_scene_switch', 'sketch') and not isinstance(scene, GameSketch):
