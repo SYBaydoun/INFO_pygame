@@ -1052,7 +1052,9 @@ class GameHomeBase(GameScene):
         self.refresh_resources()
 
     def get_height(self, x: int, y: int) -> int:
-
+        save_data = load_save(self.save_path)
+        progress_tuples = [tuple(pos) if isinstance(pos, list) else pos for pos in save_data.get("progress", [])]
+        
         inside_base = (
             0 <= x < MAP_SIZE and
             0 <= y < MAP_SIZE
@@ -1082,10 +1084,14 @@ class GameHomeBase(GameScene):
         if dist <= 3:
 
             t = dist / 3
-
-            return int(target * t)
-
-        return target
+            if (x, y) in progress_tuples:
+                return 0
+            else:
+                return int(target * t)
+        if (x, y) in progress_tuples:
+                return 0
+        else:
+            return target
     def unlocked_area_border_floodsearch(self, x: int = 0, y: int = 0, border: list[tuple[int, int]] = [], unlocked: list[tuple[int, int]] = [(0, 0)], area: bool = False) -> list[tuple[int, int]]:
         current_height = self.get_height(x, y)
 
@@ -1109,7 +1115,33 @@ class GameHomeBase(GameScene):
                 print(unlocked, len(unlocked), border, len(border))
                 self.unlocked_area_border_floodsearch(nx, ny, border, unlocked)
         return unlocked if area else border
+    
+    def check_mining(self, save_path: str):
+        save_data = load_save(self.save_path)
+        mining_positions = save_data.get("mining_position", [])
+        for element in mining_positions:
+            if element[2] <= time.time():
+                save_data["mining_position"].remove(element)
+                save_data["miner"]["number"] -= 1
+                save_data["miner"]["extra_pos"].remove([element[0], element[1]])
+                save_data["placed_objects"].remove([element[0], element[1]])
+                save_data["progress"].append([element[0], element[1]])
+                metal_gain = 0
+                for i in range(1, element[3]):
+                    metal_gain += random.randint(5, 20)
+                if save_data["resource_max"]["metal"] >= save_data["resources"]["metal"] + metal_gain:
+                    save_data["resources"]["metal"] += metal_gain
+                else:
+                    save_data["resources"]["metal"] = save_data["resource_max"]["metal"]
+                
+                print(f"Mining at ({element[0]}, {element[1]}) completed!")
+                with open(self.save_path, "w", encoding="utf-8") as save_file:
+                    json.dump(save_data, save_file, indent=2)
+            else:
+                continue
 
+        with open(self.save_path, "w", encoding="utf-8") as save_file:
+            json.dump(save_data, save_file, indent=2)
 
 
     def iso_to_screen(self, x: int, y: int) -> float:
@@ -1240,6 +1272,9 @@ class GameHomeBase(GameScene):
                     print(x, y, self.unlocked_area_border)
                     self.placed_objects.setdefault(object_type, []).append((x, y))
                     self.save_placement(object_type, x, y)
+                    self.save_data = load_save(self.save_path)
+                    self.save_data["mining_position"].append((x, y, time.time() + 10 * self.get_height(x, y), self.get_height(x, y)))  # Example: 10 seconds mining time
+                    json.dump(self.save_data, open(self.save_path, "w"), indent=2)
                     self.placing = None
                 elif object_type in self.buildable_types and object_type != "miner":
                     print("yeock")
@@ -1274,6 +1309,7 @@ class GameHomeBase(GameScene):
             if getattr(keyboard, self.controlls['movement']['right']):
                 self.camera_x -= self.camera_speed * boost
                 self.camera_y += self.camera_speed * boost
+        self.check_mining(self.save_path)
 
 #Scene Game Sketch
 class GameSketch(GameScene):
