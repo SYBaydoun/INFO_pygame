@@ -3,16 +3,16 @@
   "created": "20260602222356",
   "seed": 897702,
   "resources": {
-    "electricity": 50,
-    "metal": 40,
-    "minerals": 85,
-    "water": 20,
-    "communication": 55,
-    "money": 10000,
+    "electricity": 64,
+    "metal": 100,
+    "minerals": 92,
+    "water": 29,
+    "communication": 60,
+    "money": 9900,
     "science": 0
   },
   "resource_max": {
-    "electricity": 60,
+    "electricity": 64,
     "metal": 100,
     "minerals": 100,
     "water": 100,
@@ -39,8 +39,13 @@
     ]
   },
   "solar": {
-    "number": 15,
-    "extra_pos": []
+    "number": 16,
+    "extra_pos": [
+      [
+        19,
+        14
+      ]
+    ]
   },
   "base": {
     "number": 1,
@@ -55,7 +60,72 @@
     "extra_pos": []
   },
   "mining_position": [],
-  "progress": [],
+  "progress": [
+    [
+      11,
+      0
+    ],
+    [
+      12,
+      0
+    ],
+    [
+      11,
+      10
+    ],
+    [
+      9,
+      11
+    ],
+    [
+      10,
+      11
+    ],
+    [
+      8,
+      11
+    ],
+    [
+      12,
+      11
+    ],
+    [
+      13,
+      11
+    ],
+    [
+      14,
+      11
+    ],
+    [
+      15,
+      11
+    ],
+    [
+      16,
+      11
+    ],
+    [
+      17,
+      11
+    ],
+    [
+      18,
+      11
+    ],
+    [
+      23,
+      12
+    ],
+    [
+      5,
+      5
+    ],
+    [
+      13,
+      0
+    ]
+  ],
   "placed_objects": [
     [
       0,
@@ -148,6 +218,10 @@
     [
       3,
       8
+    ],
+    [
+      19,
+      14
     ]
   ]
 }

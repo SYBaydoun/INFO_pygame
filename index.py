@@ -77,6 +77,14 @@ stats_change_libary = {
               "mining": {"electricity": [10,10], "metal": [20, 50], "minerals": [2, 7], "water": [2, 5], "communication": [5,5], "money": [0,0], "science": [0,0]}
               },
 }
+for module in stats_change_libary:
+    for posibility in stats_change_libary[module]:
+        print(stats_change_libary[module][posibility])
+        print("bb")
+        for things in stats_change_libary[module][posibility]:
+            print(stats_change_libary[module][posibility][things])
+            print("cc")
+    print("aa")
 
 
 #-------------------------------------------
@@ -1156,28 +1164,9 @@ class GameHomeBase(GameScene):
                 # Remove miner from placed_objects dict for rendering
                 if "miner" in self.placed_objects and (element[0], element[1]) in self.placed_objects["miner"]:
                     self.placed_objects["miner"].remove((element[0], element[1]))
-                
-                metal_gain = 0
-                for i in range(1, element[3]):
-                    metal_gain += random.randint(20, 50)
-                if save_data["resource_max"]["metal"] >= save_data["resources"]["metal"] + metal_gain:
-                    save_data["resources"]["metal"] += metal_gain
-                else:
-                    save_data["resources"]["metal"] = save_data["resource_max"]["metal"]
-                mineral_gain = 0
-                for i in range(1, element[3]):
-                    mineral_gain += random.randint(0, 5)
-                if save_data["resource_max"]["minerals"] >= save_data["resources"]["minerals"] + mineral_gain:
-                    save_data["resources"]["minerals"] += mineral_gain
-                else:
-                    save_data["resources"]["minerals"] = save_data["resource_max"]["minerals"]
-                water_gain = 0
-                for i in range(1, element[3]):
-                    water_gain += random.randint(0, 7)
-                if save_data["resource_max"]["water"] >= save_data["resources"]["water"] + water_gain:
-                    save_data["resources"]["water"] += water_gain
-                else:
-                    save_data["resources"]["water"] = save_data["resource_max"]["water"]
+
+                miner_return(element)
+
                 self.refresh_resources()
                 self.unlocked_area = self.unlocked_area_border_floodsearch(area=True)
                 self.unlocked_area_border = self.unlocked_area_border_floodsearch()
@@ -1562,6 +1551,20 @@ def module_resource_manipulation(object_type: str) -> bool:
         else:
             return False
     return True
+
+def miner_return(element: list[tuple[int, int, int]], change_lib: dict = stats_change_libary):
+    global save_data
+    for resource in change_lib["miner"]["mining"]:
+        change = 0
+        for _ in range(1, element[3]):
+            change += random.randint(change_lib["miner"]["mining"][resource][0], change_lib["miner"]["mining"][resource][1])
+        try:
+            if save_data["resources"][resource] + change < save_data["resource_max"][resource]:
+                save_data["resources"][resource] += change
+            else:
+                save_data["resources"][resource] = save_data["resource_max"][resource]
+        except KeyError: #<- falls kein max wert definiert ist
+            save_data["resources"][resource] += change
 
 #setzt die buttonkollision für die szenen um
 def on_mouse_down(pos, button):
