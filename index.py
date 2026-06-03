@@ -72,8 +72,9 @@ stats_change_libary = {
     "rocket": {"resources": {"electricity": -10, "metal": -50, "minerals": -20, "water": -50, "communication": 0, "money": -500, "science": 0},
                "resource_max": {"electricity": 0, "metal": 0, "minerals": 0, "water": 0, "communication": 0, "money": 0, "science": 0},
                },
-    "miner": {"resources": {"electricity": -10, "metal": -20, "minerals": 0, "water": -10, "communication": 0, "money": -150, "science": 0},
+    "miner": {"resources": {"electricity": -10, "metal": -20, "minerals": 0, "water": -10, "communication": 5, "money": -150, "science": 0},
               "resource_max": {"electricity": 0, "metal": 0, "minerals": 0, "water": 0, "communication": 0, "money": 0, "science": 0},
+              "mining": {"electricity": [10,10], "metal": [20, 50], "minerals": [2, 7], "water": [2, 5], "communication": [5,5], "money": [0,0], "science": [0,0]}
               },
 }
 
