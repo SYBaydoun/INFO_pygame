@@ -454,7 +454,7 @@ class BuildMenu():
         self.items = items
         self.actions = self._normalize_actions(actions)
         self.visible = False
-        self.rect = pygame.Rect(0, 0, 240, 300)
+        self.rect = pygame.Rect(0, 0, 240, 380)
         self.rect.topright = (WIDTH - 10, 10)
         self.buttons: list[Button] = []
         self.setup_buttons()
