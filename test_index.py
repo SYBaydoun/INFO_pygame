@@ -58,6 +58,7 @@ solar = pygame.image.load("images/solar.png")
 base = pygame.image.load("images/base.png")
 rocket = pygame.image.load("images/rocket.png")
 miner = pygame.image.load("images/miner.png")
+antenne = pygame.image.load("images/antenne.png")
 
 PLANETEN_SIZE = 250
 PLANET_Y_OFFSET = 100
@@ -90,17 +91,20 @@ save_data = {}
 controlls = {}
 stats_change_libary = {
     "solar": {"resources": {"electricity": 4, "metal": -10, "minerals": -5, "water": 0, "communication": 0, "money": -100, "science": 0},
-              "resource_max": {"electricity": 4, "metal": 0, "minerals": 0, "water": 0, "communication": 0, "money": 0, "science": 0},
+              "resource_max": {"electricity": 4, "metal": 0, "minerals": 0, "water": 0, "communication": 0},
               },
     "base": {"resources": {"electricity": -2, "metal": -30, "minerals": -10, "water": -10, "communication": 0, "money": -200, "science": 0},
-             "resource_max": {"electricity": 0, "metal": 20, "minerals": 4, "water": 0, "communication": 0, "money": 0, "science": 0},
+             "resource_max": {"electricity": 0, "metal": 20, "minerals": 4, "water": 0, "communication": 0},
              },
     "rocket": {"resources": {"electricity": -10, "metal": -50, "minerals": -20, "water": -50, "communication": 0, "money": -500, "science": 0},
-               "resource_max": {"electricity": 0, "metal": 0, "minerals": 0, "water": 0, "communication": 0, "money": 0, "science": 0},
+               "resource_max": {"electricity": 0, "metal": 0, "minerals": 0, "water": 0, "communication": 0},
                },
     "miner": {"resources": {"electricity": -10, "metal": -20, "minerals": 0, "water": -10, "communication": -5, "money": -150, "science": 0},
-              "resource_max": {"electricity": 0, "metal": 0, "minerals": 0, "water": 0, "communication": 0, "money": 0, "science": 0},
+              "resource_max": {"electricity": 0, "metal": 0, "minerals": 0, "water": 0, "communication": 0},
               "mining": {"electricity": [10,10], "metal": [20, 50], "minerals": [2, 7], "water": [10, 15], "communication": [5,5], "money": [0,0], "science": [0,0]}
+              },
+    "antenne": {"resources": {"electricity": -10, "metal": -20, "minerals": -10, "water": 0, "communication": 10, "money": -200, "science": 0},
+              "resource_max": {"electricity": 0, "metal": 0, "minerals": 0, "water": 0, "communication": 10},
               },
 }
 for module in stats_change_libary:
@@ -450,7 +454,7 @@ class BuildMenu():
         self.items = items
         self.actions = self._normalize_actions(actions)
         self.visible = False
-        self.rect = pygame.Rect(0, 0, 240, 280)
+        self.rect = pygame.Rect(0, 0, 240, 380)
         self.rect.topright = (WIDTH - 10, 10)
         self.buttons: list[Button] = []
         self.setup_buttons()
@@ -992,6 +996,7 @@ class GameHomeBase(GameScene):
         self.base_scaled = pygame.transform.scale(base, (128, 128))
         self.rocket_scaled = pygame.transform.scale(rocket, (256, 256))
         self.miner_scaled = pygame.transform.scale(miner, (256, 256))
+        self.antenne_scaled = pygame.transform.scale(antenne, (256, 256))
 
         self.controlls = controlls
 
@@ -1031,7 +1036,13 @@ class GameHomeBase(GameScene):
                 "icon": self.miner_scaled,
                 "save_key": "miner",
                 "offset": (-TILE_WIDTH, -TILE_HEIGHT * 7 // 4)
-            }
+            },
+            "antenne": {
+                "label": "Antenne",
+                "icon": self.antenne_scaled,
+                "save_key": "antenne",
+                "offset": (-TILE_WIDTH, -TILE_HEIGHT)
+            },
 
         }
 
@@ -1055,6 +1066,7 @@ class GameHomeBase(GameScene):
         self.base_scaled = pygame.transform.scale(base, (128, 128))
         self.rocket_scaled = pygame.transform.scale(rocket, (256, 256))
         self.miner_scaled = pygame.transform.scale(miner, (256, 256))
+        self.antenne_scaled = pygame.transform.scale(antenne, (256, 256))
 
         self.controlls = controlls
 
@@ -1303,6 +1315,10 @@ class GameHomeBase(GameScene):
         screen_x, screen_y = self.iso_to_screen(x, y)
         screen.surface.blit(self.base_scaled, (screen_x - TILE_WIDTH // 2, screen_y - TILE_HEIGHT // 2))
 
+        x, y = save_data["start_modul_pos"]["antenne"]
+        screen_x, screen_y = self.iso_to_screen(x, y)
+        screen.surface.blit(self.antenne_scaled, (screen_x - TILE_WIDTH, screen_y - TILE_HEIGHT))
+
 
 
         self.draw_ui()
@@ -1338,20 +1354,20 @@ class GameHomeBase(GameScene):
                     self.placing_last_move_time = current_time
 
             # place the object when pressing the place key
-            if getattr(keyboard, gm.get('place', ''), False) and is_space_free(self.save_path, self.placing['type'], self.placing['x'], self.placing['y']):
+            if getattr(keyboard, gm.get('place', ''), False) and is_space_free(self.unlocked_area, self.unlocked_area_border, self.placing['type'], self.placing['x'], self.placing['y']):
                 object_type = self.placing['type']
                 x = int(self.placing['x'])
                 y = int(self.placing['y'])
                 if object_type == "miner" and object_type in self.buildable_types and (x, y) in self.unlocked_area_border:
-                    self.placed_objects.setdefault(object_type, []).append((x, y))
-                    self.save_placement(object_type, x, y)
-                    global save_data
-                    save_data["mining_position"].append([x, y, time.time() + 10 * self.get_height(x, y), self.get_height(x, y)])  # Example: 10 seconds mining time
-                    self.placing = None
+                    if self.save_placement(object_type, x, y):
+                        self.placed_objects.setdefault(object_type, []).append((x, y))
+                        global save_data
+                        save_data["mining_position"].append([x, y, time.time() + 10 * self.get_height(x, y), self.get_height(x, y)])  # Example: 10 seconds mining time
+                        self.placing = None
                 elif object_type in self.buildable_types and object_type != "miner":
-                    self.placed_objects.setdefault(object_type, []).append((x, y))
-                    self.save_placement(object_type, x, y)
-                    self.placing = None
+                    if self.save_placement(object_type, x, y):
+                        self.placed_objects.setdefault(object_type, []).append((x, y))
+                        self.placing = None
 
         # camera movement (original behaviour)
 
@@ -1556,22 +1572,44 @@ def koordinaten_netz(eckpunkte: list) -> list:
 def calculate_placementspace(object_type: str, x: int, y: int) -> list[list[int, int]]:
     if object_type == "solar" or object_type == "miner":
         return [[x, y]]
-    elif object_type == "base" or object_type == "rocket":
+    elif object_type == "base" or object_type == "rocket" or object_type == "antenne":
         return [[x, y], [x - 1, y], [x, y - 1], [x - 1, y - 1]]
 
 
-def is_space_free(save_path: str, object_type: str, x: int, y: int) -> bool:
+def is_space_free(area: list, border: list, object_type: str, x: int, y: int) -> bool:
     global save_data
     checking_koordinates = calculate_placementspace(object_type, x, y)
     placed = save_data.get("placed_objects", []) if save_data else []
-    for pos in checking_koordinates:
-        if pos in placed:
+    
+    # Special handling for miner: must be on border, not in unlocked area
+    if object_type == "miner":
+        if (x, y) not in border:
             return False
+        # Check if already placed
+        pos_tuple = (x, y)
+        if pos_tuple in placed or [x, y] in placed:
+            return False
+        return True
+    
+    # For other objects: validate all placement parts
     for pos in checking_koordinates:
+        # Convert list to tuple for comparison if needed
+        pos_tuple = tuple(pos) if isinstance(pos, list) else pos
+        
+        # Check if already placed
+        if pos_tuple in placed or list(pos_tuple) in placed:
+            return False
+        # Check if out of bounds
         if pos[0] < 0 or pos[1] < 0:
             return False
+        # Check if all parts are in unlocked area
+        if pos_tuple not in area:
+            return False
+        # Check if in border (not allowed for non-miners)
+        if pos_tuple in border:
+            return False
+
     return True
-    # vergleicht die koordinaten
 
 
 def module_resource_manipulation(object_type: str) -> bool:
@@ -1606,6 +1644,11 @@ def module_resource_manipulation(object_type: str) -> bool:
             save_data["resources"]["money"] -= 200
         else:
             return False"""
+    for resource_max in stats_change_libary[object_type]["resource_max"]:
+        if save_data["resource_max"][resource_max] + stats_change_libary[object_type]["resource_max"][resource_max] >= 0:
+            save_data["resource_max"][resource_max] += stats_change_libary[object_type]["resource_max"][resource_max]
+        else:
+            return False
         
     for resource in stats_change_libary[object_type]["resources"]:
         if save_data["resources"][resource] + stats_change_libary[object_type]["resources"][resource] >= 0:
@@ -1621,9 +1664,10 @@ def module_resource_manipulation(object_type: str) -> bool:
                 save_data["resources"][resource] += stats_change_libary[object_type]["resources"][resource]
             print(object_type, resource, save_data["resources"][resource])
             print(resource, stats_change_libary[object_type]["resources"][resource])
-            print(resource, save_data["resources"][resource] + stats_change_libary["base"]["resources"][resource])
+            print(resource, save_data["resources"][resource] + stats_change_libary[object_type]["resources"][resource])
         else:
             return False
+
     return True
 
 def miner_return(element: list[tuple[int, int, int, int]], change_lib: dict = stats_change_libary):

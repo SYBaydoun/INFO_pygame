@@ -10,6 +10,7 @@
         "open_menu": "K_ESCAPE",
         "toggle_debug": "K_F3", 
         "quick_save": "K_F1",
+        "load_quick_save": "K_F9",
         "screenshot": "K_F2"
     },
     "menu": {
