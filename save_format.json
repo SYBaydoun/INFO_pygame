@@ -21,7 +21,8 @@
   "start_modul_pos": {
     "solar": [[0,5], [3,10]],
     "base": [2,4],
-    "rocket": [4,9]
+    "rocket": [4,9],
+    "antenne": [9,9]
   }, 
   "solar": {
     "number": 15,

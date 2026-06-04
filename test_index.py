@@ -58,7 +58,6 @@ solar = pygame.image.load("images/solar.png")
 base = pygame.image.load("images/base.png")
 rocket = pygame.image.load("images/rocket.png")
 miner = pygame.image.load("images/miner.png")
-antenne = pygame.image.load("images/antenne.png")
 
 PLANETEN_SIZE = 250
 PLANET_Y_OFFSET = 100
@@ -102,9 +101,6 @@ stats_change_libary = {
     "miner": {"resources": {"electricity": -10, "metal": -20, "minerals": 0, "water": -10, "communication": -5, "money": -150, "science": 0},
               "resource_max": {"electricity": 0, "metal": 0, "minerals": 0, "water": 0, "communication": 0, "money": 0, "science": 0},
               "mining": {"electricity": [10,10], "metal": [20, 50], "minerals": [2, 7], "water": [10, 15], "communication": [5,5], "money": [0,0], "science": [0,0]}
-              },
-    "antenne": {"resources": {"electricity": -10, "metal": -20, "minerals": -10, "water": 0, "communication": 10, "money": -200, "science": 0},
-              "resource_max": {"electricity": 0, "metal": 0, "minerals": 0, "water": 0, "communication": 10, "money": 0, "science": 0},
               },
 }
 for module in stats_change_libary:
@@ -996,7 +992,6 @@ class GameHomeBase(GameScene):
         self.base_scaled = pygame.transform.scale(base, (128, 128))
         self.rocket_scaled = pygame.transform.scale(rocket, (256, 256))
         self.miner_scaled = pygame.transform.scale(miner, (256, 256))
-        self.antenne_scaled = pygame.transform.scale(antenne, (256, 256))
 
         self.controlls = controlls
 
@@ -1036,13 +1031,7 @@ class GameHomeBase(GameScene):
                 "icon": self.miner_scaled,
                 "save_key": "miner",
                 "offset": (-TILE_WIDTH, -TILE_HEIGHT * 7 // 4)
-            },
-            "antenne": {
-                "label": "Antenne",
-                "icon": self.antenne_scaled,
-                "save_key": "antenne",
-                "offset": (-TILE_WIDTH, -TILE_HEIGHT)
-            },
+            }
 
         }
 
@@ -1066,7 +1055,6 @@ class GameHomeBase(GameScene):
         self.base_scaled = pygame.transform.scale(base, (128, 128))
         self.rocket_scaled = pygame.transform.scale(rocket, (256, 256))
         self.miner_scaled = pygame.transform.scale(miner, (256, 256))
-        self.antenne_scaled = pygame.transform.scale(antenne, (256, 256))
 
         self.controlls = controlls
 
@@ -1315,10 +1303,6 @@ class GameHomeBase(GameScene):
         screen_x, screen_y = self.iso_to_screen(x, y)
         screen.surface.blit(self.base_scaled, (screen_x - TILE_WIDTH // 2, screen_y - TILE_HEIGHT // 2))
 
-        x, y = save_data["start_modul_pos"]["antenne"]
-        screen_x, screen_y = self.iso_to_screen(x, y)
-        screen.surface.blit(self.antenne_scaled, (screen_x - TILE_WIDTH, screen_y - TILE_HEIGHT))
-
 
 
         self.draw_ui()
@@ -1359,15 +1343,15 @@ class GameHomeBase(GameScene):
                 x = int(self.placing['x'])
                 y = int(self.placing['y'])
                 if object_type == "miner" and object_type in self.buildable_types and (x, y) in self.unlocked_area_border:
-                    if self.save_placement(object_type, x, y):
-                        self.placed_objects.setdefault(object_type, []).append((x, y))
-                        global save_data
-                        save_data["mining_position"].append([x, y, time.time() + 10 * self.get_height(x, y), self.get_height(x, y)])  # Example: 10 seconds mining time
-                        self.placing = None
+                    self.placed_objects.setdefault(object_type, []).append((x, y))
+                    self.save_placement(object_type, x, y)
+                    global save_data
+                    save_data["mining_position"].append([x, y, time.time() + 10 * self.get_height(x, y), self.get_height(x, y)])  # Example: 10 seconds mining time
+                    self.placing = None
                 elif object_type in self.buildable_types and object_type != "miner":
-                    if self.save_placement(object_type, x, y):
-                        self.placed_objects.setdefault(object_type, []).append((x, y))
-                        self.placing = None
+                    self.placed_objects.setdefault(object_type, []).append((x, y))
+                    self.save_placement(object_type, x, y)
+                    self.placing = None
 
         # camera movement (original behaviour)
 
@@ -1572,7 +1556,7 @@ def koordinaten_netz(eckpunkte: list) -> list:
 def calculate_placementspace(object_type: str, x: int, y: int) -> list[list[int, int]]:
     if object_type == "solar" or object_type == "miner":
         return [[x, y]]
-    elif object_type == "base" or object_type == "rocket" or object_type == "antenne":
+    elif object_type == "base" or object_type == "rocket":
         return [[x, y], [x - 1, y], [x, y - 1], [x - 1, y - 1]]
 
 
