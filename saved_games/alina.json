@@ -3,9 +3,9 @@
   "created": "20260602211012",
   "seed": 83093,
   "resources": {
-    "electricity": 50,
-    "metal": 100,
-    "minerals": 85,
+    "electricity": 30,
+    "metal": 0,
+    "minerals": 45,
     "water": 20,
     "communication": 55,
     "money": 10000,

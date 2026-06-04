@@ -59,6 +59,32 @@ base = pygame.image.load("images/base.png")
 rocket = pygame.image.load("images/rocket.png")
 miner = pygame.image.load("images/miner.png")
 
+PLANETEN_SIZE = 250
+PLANET_Y_OFFSET = 100
+PLANET_LOCKED_ALPHA = 130
+planet_kyra = pygame.image.load("images/planet03.png")
+planet_maya = pygame.image.load("images/planet04.png")
+planet_olga = pygame.image.load("images/planet05.png")
+planet_nell = pygame.image.load("images/planet06.png")
+planet_sina = pygame.image.load("images/planet08.png")
+planet_cesar = pygame.image.load("images/planet09.png")
+
+planet_kyra = pygame.transform.scale(planet_kyra, (PLANETEN_SIZE, PLANETEN_SIZE))
+planet_maya = pygame.transform.scale(planet_maya, (PLANETEN_SIZE, PLANETEN_SIZE))
+planet_olga = pygame.transform.scale(planet_olga, (PLANETEN_SIZE, PLANETEN_SIZE))
+planet_nell = pygame.transform.scale(planet_nell, (PLANETEN_SIZE, PLANETEN_SIZE))
+planet_sina = pygame.transform.scale(planet_sina, (PLANETEN_SIZE, PLANETEN_SIZE))
+planet_cesar = pygame.transform.scale(planet_cesar, (PLANETEN_SIZE, PLANETEN_SIZE))
+
+planet_maya.set_alpha(PLANET_LOCKED_ALPHA)
+planet_olga.set_alpha(PLANET_LOCKED_ALPHA)
+planet_nell.set_alpha(PLANET_LOCKED_ALPHA)
+planet_kyra.set_alpha(PLANET_LOCKED_ALPHA)
+planet_cesar.set_alpha(PLANET_LOCKED_ALPHA)
+padlock = pygame.image.load("images/padlock.png")
+padlock = pygame.transform.scale(padlock, (PLANETEN_SIZE // 2, PLANETEN_SIZE // 2))
+
+
 save_path = None
 save_data = {}
 controlls = {}
@@ -72,9 +98,9 @@ stats_change_libary = {
     "rocket": {"resources": {"electricity": -10, "metal": -50, "minerals": -20, "water": -50, "communication": 0, "money": -500, "science": 0},
                "resource_max": {"electricity": 0, "metal": 0, "minerals": 0, "water": 0, "communication": 0, "money": 0, "science": 0},
                },
-    "miner": {"resources": {"electricity": -10, "metal": -20, "minerals": 0, "water": -10, "communication": 5, "money": -150, "science": 0},
+    "miner": {"resources": {"electricity": -10, "metal": -20, "minerals": 0, "water": -10, "communication": -5, "money": -150, "science": 0},
               "resource_max": {"electricity": 0, "metal": 0, "minerals": 0, "water": 0, "communication": 0, "money": 0, "science": 0},
-              "mining": {"electricity": [10,10], "metal": [20, 50], "minerals": [2, 7], "water": [2, 5], "communication": [5,5], "money": [0,0], "science": [0,0]}
+              "mining": {"electricity": [10,10], "metal": [20, 50], "minerals": [2, 7], "water": [10, 15], "communication": [5,5], "money": [0,0], "science": [0,0]}
               },
 }
 for module in stats_change_libary:
@@ -1012,6 +1038,10 @@ class GameHomeBase(GameScene):
         self.placed_objects: dict[str, list[tuple[int, int]]] = self.load_saved_placements()
         self.placing: dict | None = None
 
+        # placing movement delay (in seconds) - adjustable to control speed
+        self.placing_move_delay = 0.15  # change this to adjust movement speed (e.g., 0.1 = fast, 0.5 = slow)
+        self.placing_last_move_time = 0.0  # timestamp of last movement
+
         self.build_menu = BuildMenu(
             [entry["label"] for entry in self.buildable_types.values()],
             [lambda object_type=object_type: self.start_placement(object_type) for object_type in self.buildable_types.keys()]
@@ -1043,6 +1073,7 @@ class GameHomeBase(GameScene):
             "x": int(self.camera_x),
             "y": int(self.camera_y)
         }
+        self.placing_last_move_time = time.time()  # reset movement timer on new placement
         self.build_menu.close()
 
     def load_saved_placements(self) -> dict[str, list[tuple[int, int]]]:
@@ -1057,7 +1088,7 @@ class GameHomeBase(GameScene):
         save_key = self.buildable_types[object_type]["save_key"]
 
         if not module_resource_manipulation(save_key):
-            return
+            return False
 
         global save_data
 
@@ -1077,8 +1108,8 @@ class GameHomeBase(GameScene):
             save_data["placed_objects"] = []
         
         save_data["placed_objects"].extend(calculate_placementspace(object_type, x, y))
-
         self.refresh_resources()
+        return True
 
     def get_height(self, x: int, y: int) -> int:
         global save_data
@@ -1285,15 +1316,26 @@ class GameHomeBase(GameScene):
             current_x = int(self.placing['x'])
             current_y = int(self.placing['y'])
 
-            # move with the mapped keys (one tile per frame while held)
-            if getattr(keyboard, gm.get('left', ''), False) and ((self.placing['x'] + 1, self.placing['y']) in self.unlocked_area or (self.placing["type"] == "miner" and (self.placing['x'], self.placing['y']) in self.unlocked_area)):
-                self.placing['x'] = current_x + 1
-            if getattr(keyboard, gm.get('right', ''), False) and ((self.placing['x'] - 1, self.placing['y']) in self.unlocked_area or (self.placing["type"] == "miner" and (self.placing['x'], self.placing['y']) in self.unlocked_area)):
-                self.placing['x'] = current_x - 1
-            if getattr(keyboard, gm.get('up', ''), False) and ((self.placing['x'], self.placing['y'] + 1) in self.unlocked_area or (self.placing["type"] == "miner" and (self.placing['x'], self.placing['y']) in self.unlocked_area)):
-                self.placing['y'] = current_y + 1
-            if getattr(keyboard, gm.get('down', ''), False) and ((self.placing['x'], self.placing['y'] - 1) in self.unlocked_area or (self.placing["type"] == "miner" and (self.placing['x'], self.placing['y']) in self.unlocked_area)):
-                self.placing['y'] = current_y - 1
+            # move with the mapped keys using time-based delay instead of every frame
+            current_time = time.time()
+            if current_time - self.placing_last_move_time >= self.placing_move_delay:
+                moved = False
+
+                if getattr(keyboard, gm.get('left', ''), False) and ((self.placing['x'] + 1, self.placing['y']) in self.unlocked_area or (self.placing["type"] == "miner" and (self.placing['x'], self.placing['y']) in self.unlocked_area)):
+                    self.placing['x'] = current_x + 1
+                    moved = True
+                elif getattr(keyboard, gm.get('right', ''), False) and ((self.placing['x'] - 1, self.placing['y']) in self.unlocked_area or (self.placing["type"] == "miner" and (self.placing['x'], self.placing['y']) in self.unlocked_area)):
+                    self.placing['x'] = current_x - 1
+                    moved = True
+                elif getattr(keyboard, gm.get('up', ''), False) and ((self.placing['x'], self.placing['y'] + 1) in self.unlocked_area or (self.placing["type"] == "miner" and (self.placing['x'], self.placing['y']) in self.unlocked_area)):
+                    self.placing['y'] = current_y + 1
+                    moved = True
+                elif getattr(keyboard, gm.get('down', ''), False) and ((self.placing['x'], self.placing['y'] - 1) in self.unlocked_area or (self.placing["type"] == "miner" and (self.placing['x'], self.placing['y']) in self.unlocked_area)):
+                    self.placing['y'] = current_y - 1
+                    moved = True
+
+                if moved:
+                    self.placing_last_move_time = current_time
 
             # place the object when pressing the place key
             if getattr(keyboard, gm.get('place', ''), False) and is_space_free(self.save_path, self.placing['type'], self.placing['x'], self.placing['y']):
@@ -1362,7 +1404,19 @@ class GameMap(GameScene):
         self.save_path = save_path
     
     def draw(self):
-        bliting_bg("bg_settings.jpg")
+        bliting_bg("bg_nightsky.jpg")
+        screen.blit(planet_sina, (WIDTH // 2 - PLANETEN_SIZE // 2, PLANET_Y_OFFSET))
+        screen.blit(planet_kyra, (WIDTH // 6 - PLANETEN_SIZE // 2, PLANET_Y_OFFSET))
+        screen.blit(planet_maya, (WIDTH * 5 // 6 - PLANETEN_SIZE // 2, PLANET_Y_OFFSET))
+        screen.blit(planet_nell, (WIDTH // 2 - PLANETEN_SIZE // 2, HEIGHT - PLANET_Y_OFFSET - PLANETEN_SIZE))
+        screen.blit(planet_olga, (WIDTH // 6 - PLANETEN_SIZE // 2, HEIGHT - PLANET_Y_OFFSET - PLANETEN_SIZE))
+        screen.blit(planet_cesar, (WIDTH * 5 // 6 - PLANETEN_SIZE // 2, HEIGHT - PLANET_Y_OFFSET - PLANETEN_SIZE))
+        screen.blit(padlock, (WIDTH * 5 // 6 - PLANETEN_SIZE // 4, PLANET_Y_OFFSET + PLANETEN_SIZE // 2))
+        screen.blit(padlock, (WIDTH // 6 - PLANETEN_SIZE // 4, PLANET_Y_OFFSET + PLANETEN_SIZE // 2))
+        screen.blit(padlock, (WIDTH // 2 - PLANETEN_SIZE // 4, HEIGHT - PLANET_Y_OFFSET - PLANETEN_SIZE // 2))
+        screen.blit(padlock, (WIDTH // 6 - PLANETEN_SIZE // 4, HEIGHT - PLANET_Y_OFFSET - PLANETEN_SIZE // 2))
+        screen.blit(padlock, (WIDTH * 5 // 6 - PLANETEN_SIZE // 4, HEIGHT - PLANET_Y_OFFSET - PLANETEN_SIZE // 2))
+
         self.draw_ui()
     
     def update(self):
@@ -1389,7 +1443,7 @@ for filename in os.listdir("images"):
         bg = pygame.transform.smoothscale(bg, (new_width, new_height))
 
         backgrounds[filename] = bg
-
+print(backgrounds)
 #Türen für Transition laden
 door_top = pygame.image.load("images/door_top.png")
 door_bottom = pygame.image.load("images/door_bottom.png")
@@ -1524,7 +1578,7 @@ def module_resource_manipulation(object_type: str) -> bool:
     global save_data
     if not save_data:
         return False
-    if object_type == "solar":
+    """if object_type == "solar":
         if save_data["resources"]["money"] >= 100:
             save_data["resources"]["electricity"] += 4
             save_data["resource_max"]["electricity"] += 4
@@ -1540,6 +1594,8 @@ def module_resource_manipulation(object_type: str) -> bool:
             save_data["resource_max"]["metal"] += 20
             save_data["resource_max"]["minerals"] += 4
             save_data["resources"]["money"] -= 100  
+
+
         else:
             return False
     elif object_type == "rocket":
@@ -1549,15 +1605,38 @@ def module_resource_manipulation(object_type: str) -> bool:
             save_data["resources"]["water"] -= 20
             save_data["resources"]["money"] -= 200
         else:
+            return False"""
+        
+    for resource in stats_change_libary[object_type]["resources"]:
+        if save_data["resources"][resource] + stats_change_libary[object_type]["resources"][resource] >= 0:
+            if resource in save_data["resource_max"]:
+                print("max")
+                if save_data["resources"][resource] + stats_change_libary[object_type]["resources"][resource] > save_data["resource_max"][resource]:
+                    print("überfluss")
+                    save_data["resources"][resource] = save_data["resource_max"][resource]
+                else:
+                    print("in limit")
+                    save_data["resources"][resource] += stats_change_libary[object_type]["resources"][resource]
+            else:
+                save_data["resources"][resource] += stats_change_libary[object_type]["resources"][resource]
+            print(object_type, resource, save_data["resources"][resource])
+            print(resource, stats_change_libary[object_type]["resources"][resource])
+            print(resource, save_data["resources"][resource] + stats_change_libary["base"]["resources"][resource])
+        else:
             return False
     return True
 
-def miner_return(element: list[tuple[int, int, int]], change_lib: dict = stats_change_libary):
+def miner_return(element: list[tuple[int, int, int, int]], change_lib: dict = stats_change_libary):
     global save_data
     for resource in change_lib["miner"]["mining"]:
         change = 0
-        for _ in range(1, element[3]):
+        print(element)
+        if change_lib["miner"]["mining"][resource][0] == change_lib["miner"]["mining"][resource][1]:
             change += random.randint(change_lib["miner"]["mining"][resource][0], change_lib["miner"]["mining"][resource][1])
+        else:
+            for _ in range(1, element[3] + 1):
+                change += random.randint(change_lib["miner"]["mining"][resource][0], change_lib["miner"]["mining"][resource][1])
+                print(_, element[3], change)
         try:
             if save_data["resources"][resource] + change < save_data["resource_max"][resource]:
                 save_data["resources"][resource] += change
