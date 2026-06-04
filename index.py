@@ -91,20 +91,20 @@ save_data = {}
 controlls = {}
 stats_change_libary = {
     "solar": {"resources": {"electricity": 4, "metal": -10, "minerals": -5, "water": 0, "communication": 0, "money": -100, "science": 0},
-              "resource_max": {"electricity": 4, "metal": 0, "minerals": 0, "water": 0, "communication": 0, "money": 0, "science": 0},
+              "resource_max": {"electricity": 4, "metal": 0, "minerals": 0, "water": 0, "communication": 0},
               },
     "base": {"resources": {"electricity": -2, "metal": -30, "minerals": -10, "water": -10, "communication": 0, "money": -200, "science": 0},
-             "resource_max": {"electricity": 0, "metal": 20, "minerals": 4, "water": 0, "communication": 0, "money": 0, "science": 0},
+             "resource_max": {"electricity": 0, "metal": 20, "minerals": 4, "water": 0, "communication": 0},
              },
     "rocket": {"resources": {"electricity": -10, "metal": -50, "minerals": -20, "water": -50, "communication": 0, "money": -500, "science": 0},
-               "resource_max": {"electricity": 0, "metal": 0, "minerals": 0, "water": 0, "communication": 0, "money": 0, "science": 0},
+               "resource_max": {"electricity": 0, "metal": 0, "minerals": 0, "water": 0, "communication": 0},
                },
     "miner": {"resources": {"electricity": -10, "metal": -20, "minerals": 0, "water": -10, "communication": -5, "money": -150, "science": 0},
-              "resource_max": {"electricity": 0, "metal": 0, "minerals": 0, "water": 0, "communication": 0, "money": 0, "science": 0},
+              "resource_max": {"electricity": 0, "metal": 0, "minerals": 0, "water": 0, "communication": 0},
               "mining": {"electricity": [10,10], "metal": [20, 50], "minerals": [2, 7], "water": [10, 15], "communication": [5,5], "money": [0,0], "science": [0,0]}
               },
     "antenne": {"resources": {"electricity": -10, "metal": -20, "minerals": -10, "water": 0, "communication": 10, "money": -200, "science": 0},
-              "resource_max": {"electricity": 0, "metal": 0, "minerals": 0, "water": 0, "communication": 10, "money": 0, "science": 0},
+              "resource_max": {"electricity": 0, "metal": 0, "minerals": 0, "water": 0, "communication": 10},
               },
 }
 for module in stats_change_libary:
@@ -1644,6 +1644,11 @@ def module_resource_manipulation(object_type: str) -> bool:
             save_data["resources"]["money"] -= 200
         else:
             return False"""
+    for resource_max in stats_change_libary[object_type]["resource_max"]:
+        if save_data["resource_max"][resource_max] + stats_change_libary[object_type]["resource_max"][resource_max] >= 0:
+            save_data["resource_max"][resource_max] += stats_change_libary[object_type]["resource_max"][resource_max]
+        else:
+            return False
         
     for resource in stats_change_libary[object_type]["resources"]:
         if save_data["resources"][resource] + stats_change_libary[object_type]["resources"][resource] >= 0:
@@ -1659,9 +1664,10 @@ def module_resource_manipulation(object_type: str) -> bool:
                 save_data["resources"][resource] += stats_change_libary[object_type]["resources"][resource]
             print(object_type, resource, save_data["resources"][resource])
             print(resource, stats_change_libary[object_type]["resources"][resource])
-            print(resource, save_data["resources"][resource] + stats_change_libary["base"]["resources"][resource])
+            print(resource, save_data["resources"][resource] + stats_change_libary[object_type]["resources"][resource])
         else:
             return False
+
     return True
 
 def miner_return(element: list[tuple[int, int, int, int]], change_lib: dict = stats_change_libary):
