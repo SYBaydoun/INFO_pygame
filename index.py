@@ -544,6 +544,46 @@ class BuildMenu():
 
         return None
 
+class RocketMenu():
+    def __init__(self, items: list[str]):
+        self.items = items
+        self.visible = False
+        self.rect = pygame.Rect(0, 0, 400, 200)
+        self.rect.center = (WIDTH // 2, HEIGHT // 2)
+        self.scrollable_ui = ScrollableButtons()
+        self.scrollable_ui.upper_bound = HEIGHT // 2 - 50
+        self.scrollable_ui.lower_bound = HEIGHT // 2 + 50
+
+        for item in self.items:
+            self.scrollable_ui.add_button(item)
+    def toggle(self):
+        self.visible = not self.visible
+
+    def open(self):
+        self.visible = True
+
+    def close(self):
+        self.visible = False
+    def draw(self):
+        if not self.visible:
+            return
+        
+        pygame.draw.rect(screen.surface, (0, 9, 64), self.rect, border_radius=12)
+        self.scrollable_ui.draw()
+
+    def update(self):
+        if not self.visible:
+            return
+        self.scrollable_ui.update()
+    
+    def on_mouse_down(self):
+        if self.scrollable_ui:
+            self.scrollable_ui.on_click()
+
+
+
+    
+
 class ToolTip():
     def __init__(self, objeckt=None, text="", font_size: int = 22, padding: int = 12, bg_color=(20, 20, 30, 220), outline_color=(140, 180, 230), text_color="white", border_radius: int = 12, offset=(16, 16)):
         self.objeckt = objeckt
@@ -1074,6 +1114,7 @@ class GameHomeBase(GameScene):
         self.antenne_scaled = pygame.transform.scale(antenne, (256, 256))
 
         self.controlls = controlls
+        self.rocket_menu = None
 
         self.unlocked_area = self.unlocked_area_border_floodsearch(0, 0, area=True)
         self.unlocked_area_border = self.unlocked_area_border_floodsearch(0, 0, area=False)
@@ -1307,6 +1348,26 @@ class GameHomeBase(GameScene):
         screen_y += OFFSET_Y
 
         return screen_x, screen_y
+    
+    def screen_to_iso(self, sx: int, sy: int):
+        # Remove screen offsets
+        sx -= OFFSET_X
+        sy -= OFFSET_Y
+
+        # Undo the matrix transform
+        x = (sx / (TILE_WIDTH / 2) + sy / (TILE_HEIGHT / 2)) / 2
+        y = (sy / (TILE_HEIGHT / 2) - sx / (TILE_WIDTH / 2)) / 2
+
+        # Undo the sign flips
+        x = -x
+        y = -y
+
+        # Add camera offset back
+        x += self.camera_x
+        y += self.camera_y
+
+        return x, y
+
 
     def draw(self):
 
@@ -1394,7 +1455,8 @@ class GameHomeBase(GameScene):
         screen_x, screen_y = self.iso_to_screen(x, y)
         screen.surface.blit(self.antenne_scaled, (screen_x - TILE_WIDTH, screen_y - TILE_HEIGHT))
 
-
+        if self.rocket_menu:
+            self.rocket_menu.draw()
 
         self.draw_ui()
 
@@ -1469,6 +1531,28 @@ class GameHomeBase(GameScene):
                 self.camera_x -= self.camera_speed * boost
                 self.camera_y += self.camera_speed * boost
         self.check_mining(self.save_path)
+
+        if self.rocket_menu:
+            self.rocket_menu.update()
+        
+    def on_mouse_down(self, pos, button):
+        super().on_mouse_down(pos, button)
+        if button == mouse.LEFT:
+            print(pos)
+            x, y = self.screen_to_iso(pos[0], pos[1])
+            rr = calculate_placementspace("rocket", save_data["start_modul_pos"]["rocket"][0], save_data["start_modul_pos"]["rocket"][1])
+            for extra in save_data["rocket"]["extra_pos"]:
+                temp = calculate_placementspace("rocket", extra[0], extra[1])
+                rr.extend(temp)
+            
+            for pos in rr:
+                if abs(pos[0] - x) <= 0.5 and abs(pos[1] - y) <= 0.5:
+                    print("yay")
+                    index = rr.index(pos)
+                    print(pos, rr[index - index % 4])
+                    self.rocket_menu = RocketMenu(['test1', 'test2', 'test3', 'tes4', 'test5'])
+                    self.rocket_menu.toggle()
+                    self.rocket_menu.draw()
 
 #Scene Game Sketch
 class GameSketch(GameScene):

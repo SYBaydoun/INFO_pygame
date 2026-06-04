@@ -85,10 +85,12 @@ planet_cesar.set_alpha(PLANET_LOCKED_ALPHA)
 padlock = pygame.image.load("images/padlock.png")
 padlock = pygame.transform.scale(padlock, (PLANETEN_SIZE // 2, PLANETEN_SIZE // 2))
 
-
+#variablen wo ders spielstand der json datei gespeichert, manipuliert und dann wieder in die json gepuscht wird beim speichern
 save_path = None
 save_data = {}
 controlls = {}
+
+#veränderungen beim plazieren oder interagieren der module
 stats_change_libary = {
     "solar": {"resources": {"electricity": 4, "metal": -10, "minerals": -5, "water": 0, "communication": 0, "money": -100, "science": 0},
               "resource_max": {"electricity": 4, "metal": 0, "minerals": 0, "water": 0, "communication": 0},
@@ -107,14 +109,6 @@ stats_change_libary = {
               "resource_max": {"electricity": 0, "metal": 0, "minerals": 0, "water": 0, "communication": 10},
               },
 }
-for module in stats_change_libary:
-    for posibility in stats_change_libary[module]:
-        print(stats_change_libary[module][posibility])
-        print("bb")
-        for things in stats_change_libary[module][posibility]:
-            print(stats_change_libary[module][posibility][things])
-            print("cc")
-    print("aa")
 
 
 #-------------------------------------------
@@ -254,9 +248,10 @@ class SceneManager():
 
 #Buttons
 class Button():
-    def __init__(self, text: str, center: tuple, width: int = 300, height: int = 50, border_radius: int = 15, target_alpha_a: int = 140, target_alpha_b: int = 220, r_inside: int = 25, g_inside: int = 35, b_inside: int = 70, r_outline: int = 120, g_outline: int = 170, b_outline: int = 255):
+    def __init__(self, text: str, center: tuple, width: int = 300, height: int = 50, border_radius: int = 15, target_alpha_a: int = 140, target_alpha_b: int = 220, r_inside: int = 25, g_inside: int = 35, b_inside: int = 70, r_outline: int = 120, g_outline: int = 170, b_outline: int = 255, tooltip_text: str | None = None):
         #inhalt
         self.text = text
+        self.tooltip_text = tooltip_text
 
         #position und größe
         self.width = width
@@ -296,10 +291,14 @@ class Button():
             self.target_alpha = self.target_alpha_b
             self.target_glow = 180
             self.target_offset_y = -3
+            if self.tooltip_text:
+                tooltip.show(self.tooltip_text, owner=self)
         else:
             self.target_alpha = self.target_alpha_a
             self.target_glow = 0
             self.target_offset_y = 0
+            if self.tooltip_text:
+                tooltip.hide(owner=self)
 
         speed = 0.12
 
@@ -545,6 +544,101 @@ class BuildMenu():
 
         return None
 
+class ToolTip():
+    def __init__(self, objeckt=None, text="", font_size: int = 22, padding: int = 12, bg_color=(20, 20, 30, 220), outline_color=(140, 180, 230), text_color="white", border_radius: int = 12, offset=(16, 16)):
+        self.objeckt = objeckt
+        self.text = text
+        self.font_size = font_size
+        self.padding = padding
+        self.bg_color = bg_color
+        self.outline_color = outline_color
+        self.text_color = text_color
+        self.border_radius = border_radius
+        self.offset = offset
+        self.visible = False
+        self.owner = None
+        self.rect = pygame.Rect(0, 0, 0, 0)
+
+    def show(self, text=None, owner=None):
+        if text is not None:
+            self.text = text
+        self.visible = True
+        self.owner = owner
+
+    def hide(self, owner=None):
+        if owner is None or owner == self.owner:
+            self.visible = False
+            self.owner = None
+
+    def set_text(self, text):
+        self.text = text
+
+    def update(self):
+        if not self.visible or not self.text:
+            return
+
+        lines = self.text.split("\n")
+        font = pygame.font.SysFont(None, self.font_size)
+        line_height = font.get_linesize()
+        widths = [font.size(line)[0] for line in lines]
+
+        width = max(widths, default=0) + self.padding * 2
+        height = len(lines) * line_height + self.padding * 2
+
+        mouse_x, mouse_y = pygame.mouse.get_pos()
+        x = mouse_x + self.offset[0]
+        y = mouse_y + self.offset[1]
+
+        if x + width > WIDTH:
+            x = mouse_x - self.offset[0] - width
+        if y + height > HEIGHT:
+            y = mouse_y - self.offset[1] - height
+
+        x = max(0, x)
+        y = max(0, y)
+
+        self.rect = pygame.Rect(x, y, width, height)
+
+    def draw(self):
+        if not self.visible or not self.text:
+            return
+
+        lines = self.text.split("\n")
+        font = pygame.font.SysFont(None, self.font_size)
+        line_height = font.get_linesize()
+
+        tooltip_surface = pygame.Surface((self.rect.width, self.rect.height), pygame.SRCALPHA)
+        tooltip_surface.fill(self.bg_color)
+        pygame.draw.rect(tooltip_surface, self.outline_color, tooltip_surface.get_rect(), 2, border_radius=self.border_radius)
+        screen.surface.blit(tooltip_surface, self.rect.topleft)
+
+        for i, line in enumerate(lines):
+            screen.draw.text(
+                line,
+                (self.rect.left + self.padding, self.rect.top + self.padding + i * line_height),
+                fontsize=self.font_size,
+                color=self.text_color
+            )
+
+#plazierbare objekte
+class PlacedObject:
+    def __init__(self, object_type: str, x: int, y: int):
+        self.object_type = object_type
+        self.x = x
+        self.y = y
+
+        self.rect = None
+
+    def set_rect(self, rect):
+        self.rect = rect
+
+    def clicked(self, pos):
+        return self.rect and self.rect.collidepoint(pos)
+
+    def on_click(self):
+        print(
+            f"Clicked {self.object_type} at ({self.x}, {self.y})"
+        )
 
 #-------------------------------------------
 #Vererbende Class Für die Menü Szenen
@@ -779,6 +873,7 @@ class GameScene():
         self.science = save_data["resources"]["science"]
 
         self.ui_y = HEIGHT - 50
+        self.ui_rects = []
 
         self.resource_icons = {
             "electricity": pygame.transform.scale(images.load("icon_electricity"), icon_size),
@@ -1441,9 +1536,8 @@ class GameMap(GameScene):
 #-------------------------------------------
 #Hintergrund laden und skalieren
 backgrounds = {}
-
 for filename in os.listdir("images"):
-    if filename.startswith("bg_"):
+    if filename.startswith("bg_"): #alle bg im spiel starten mit bg_
         path = os.path.join("images", filename)
 
         bg = pygame.image.load(path)
@@ -1458,8 +1552,8 @@ for filename in os.listdir("images"):
 
         bg = pygame.transform.smoothscale(bg, (new_width, new_height))
 
-        backgrounds[filename] = bg
-print(backgrounds)
+        backgrounds[filename] = bg #speichert die geladenen und skalierten BGs in dem bg dict
+
 #Türen für Transition laden
 door_top = pygame.image.load("images/door_top.png")
 door_bottom = pygame.image.load("images/door_bottom.png")
@@ -1531,13 +1625,11 @@ def continue_game_logik(current_scene):
     if save_name:
         filename = sanitize_filename(save_name)
         save_path_ = os.path.join("saved_games", f"{filename}.json")
-        if os.path.exists(save_path_):
-            print(f"Continuing game from {save_path_}...")
+        if os.path.exists(save_path_): #schreibt json inhalt auf code interne var und läd game mit denen
             global save_path
             global save_data
             save_path = save_path_
             save_data = load_save(save_path)
-            print(save_path, save_data)
             manager.change_scene(GameHomeBase(save_path=save_path_))
         else:
             print(f"No save file found for: {save_name}")
@@ -1547,6 +1639,7 @@ def load_save(path):
     with open(path, "r", encoding="utf-8") as file:
         return json.load(file)
 
+#speichert aktuellen spielstand von codeinterner variable auf json datei
 def write_save_data():
     global save_path
     global save_data
@@ -1569,13 +1662,14 @@ def attr_json(file: str, inner_dict: str, item: str) -> int | str | list[int | s
 def koordinaten_netz(eckpunkte: list) -> list:
     return eckpunkte[0][0], eckpunkte[0][1], eckpunkte[1][0], eckpunkte[1][1]
 
+#berechnet alle felder die ein modul beansprucht
 def calculate_placementspace(object_type: str, x: int, y: int) -> list[list[int, int]]:
     if object_type == "solar" or object_type == "miner":
         return [[x, y]]
     elif object_type == "base" or object_type == "rocket" or object_type == "antenne":
         return [[x, y], [x - 1, y], [x, y - 1], [x - 1, y - 1]]
 
-
+#überprüft, ob position genug plaz zum plazieren bietet
 def is_space_free(area: list, border: list, object_type: str, x: int, y: int) -> bool:
     global save_data
     checking_koordinates = calculate_placementspace(object_type, x, y)
@@ -1611,46 +1705,19 @@ def is_space_free(area: list, border: list, object_type: str, x: int, y: int) ->
 
     return True
 
-
+#manipuliert resourcen( /+_max ) mithilfe von stats_change_libary
 def module_resource_manipulation(object_type: str) -> bool:
     global save_data
     if not save_data:
         return False
-    """if object_type == "solar":
-        if save_data["resources"]["money"] >= 100:
-            save_data["resources"]["electricity"] += 4
-            save_data["resource_max"]["electricity"] += 4
-            save_data["resources"]["money"] -= 100
-        else:
-            return False
-    elif object_type == "base":
-        if save_data["resources"]["electricity"] >= 2 and save_data["resources"]["metal"] >= 30 and save_data["resources"]["minerals"] >= 5 and save_data["resources"]["water"] >= 10 and save_data["resources"]["money"] >= 100:
-            save_data["resources"]["electricity"] -= 2
-            save_data["resources"]["metal"] -= 30
-            save_data["resources"]["minerals"] -= 5
-            save_data["resources"]["water"] -= 10
-            save_data["resource_max"]["metal"] += 20
-            save_data["resource_max"]["minerals"] += 4
-            save_data["resources"]["money"] -= 100  
 
-
-        else:
-            return False
-    elif object_type == "rocket":
-        if save_data["resources"]["metal"] >= 40 and save_data["resources"]["minerals"] >= 20 and save_data["resources"]["water"] >= 20 and save_data["resources"]["money"] >= 200:
-            save_data["resources"]["metal"] -= 40
-            save_data["resources"]["minerals"] -= 20
-            save_data["resources"]["water"] -= 20
-            save_data["resources"]["money"] -= 200
-        else:
-            return False"""
-    for resource_max in stats_change_libary[object_type]["resource_max"]:
+    for resource_max in stats_change_libary[object_type]["resource_max"]: #updatet die max werte
         if save_data["resource_max"][resource_max] + stats_change_libary[object_type]["resource_max"][resource_max] >= 0:
             save_data["resource_max"][resource_max] += stats_change_libary[object_type]["resource_max"][resource_max]
         else:
             return False
         
-    for resource in stats_change_libary[object_type]["resources"]:
+    for resource in stats_change_libary[object_type]["resources"]: #updatet die resourcen selbst
         if save_data["resources"][resource] + stats_change_libary[object_type]["resources"][resource] >= 0:
             if resource in save_data["resource_max"]:
                 print("max")
@@ -1662,31 +1729,29 @@ def module_resource_manipulation(object_type: str) -> bool:
                     save_data["resources"][resource] += stats_change_libary[object_type]["resources"][resource]
             else:
                 save_data["resources"][resource] += stats_change_libary[object_type]["resources"][resource]
-            print(object_type, resource, save_data["resources"][resource])
-            print(resource, stats_change_libary[object_type]["resources"][resource])
-            print(resource, save_data["resources"][resource] + stats_change_libary[object_type]["resources"][resource])
         else:
             return False
 
     return True
 
+#rückgabe wenn tile abgebaut wurde
 def miner_return(element: list[tuple[int, int, int, int]], change_lib: dict = stats_change_libary):
     global save_data
     for resource in change_lib["miner"]["mining"]:
         change = 0
         print(element)
-        if change_lib["miner"]["mining"][resource][0] == change_lib["miner"]["mining"][resource][1]:
+        if change_lib["miner"]["mining"][resource][0] == change_lib["miner"]["mining"][resource][1]: # wenn die beiden zahlen gleich sind genau diesen wert zurückgeben
             change += random.randint(change_lib["miner"]["mining"][resource][0], change_lib["miner"]["mining"][resource][1])
-        else:
+        else: # sonst addition über anzahl der blöcke die abgebaut wurde mit random wert mit zahlen als grenze
             for _ in range(1, element[3] + 1):
                 change += random.randint(change_lib["miner"]["mining"][resource][0], change_lib["miner"]["mining"][resource][1])
                 print(_, element[3], change)
-        try:
+        if resource in save_data["resource_max"]:
             if save_data["resources"][resource] + change < save_data["resource_max"][resource]:
                 save_data["resources"][resource] += change
             else:
                 save_data["resources"][resource] = save_data["resource_max"][resource]
-        except KeyError: #<- falls kein max wert definiert ist
+        else:
             save_data["resources"][resource] += change
 
 #setzt die buttonkollision für die szenen um
@@ -1703,40 +1768,49 @@ def sanitize_filename(name: str) -> str:
 #regestriert und verarbeitet tastaturinput
 def on_key_down(key, mod, unicode):
     scene = manager.scene
+    global save_path, save_data
 
-    if isinstance(scene, GameScene):
-        if key == key_attr('extra', 'open_menu'):
+    if isinstance(scene, GameScene):#ausführungen wenn im game
+        if key == key_attr('extra', 'open_menu'): #öffnet menu und speichert spielstand
             if save_path and save_data:
                 write_save_data()
             manager.change_scene(Menu())
-        elif key == key_attr('extra', 'toggle_debug'):
-            # toggle on-screen debug overlay instead of printing to terminal
+        elif key == key_attr('extra', 'toggle_debug'): #debug zahlen toggeln oben links
             try:
                 manager.debug_overlay = not getattr(manager, 'debug_overlay', False)
             except Exception:
                 manager.debug_overlay = True
-        elif key == key_attr('extra', 'screenshot'):
+        elif key == key_attr('extra', 'screenshot'): #screenshot von aktueler pos
             timestamp = time.strftime("%Y%m%d-%H%M%S")
             filename = f"screenshot_{timestamp}.png"
             pygame.image.save(screen.surface, filename)
             print(f"Screenshot saved as {filename}")
-        elif key == key_attr('extra', 'quick_save'):
+        elif key == key_attr('extra', 'quick_save'): #quicksave
             if save_path and save_data:
                 write_save_data()
-        elif key == key_attr('game_scene_switch', 'fwd'):
+        elif key == key_attr('extra', 'load_quick_save'): #läd letzten gespeicherten spielstand
+            save_data = load_save(save_path)
+            if isinstance(scene, GameHomeBase):
+                manager.change_scene(GameHomeBase(save_path=scene.save_path))
+            elif isinstance(scene, GameSketch):
+                manager.change_scene(GameSketch(save_path=scene.save_path))
+            elif isinstance(scene, GameMap):
+                manager.change_scene(GameMap(save_path=scene.save_path))
+        elif key == key_attr('game_scene_switch', 'fwd'): # wechselt szene in 'vorwärtzrichtung'
             if isinstance(scene, GameHomeBase):
                 manager.change_scene(GameSketch(save_path=scene.save_path))
             elif isinstance(scene, GameSketch):
                 manager.change_scene(GameMap(save_path=scene.save_path))
             elif isinstance(scene, GameMap):
                 manager.change_scene(GameHomeBase(save_path=scene.save_path))
-        elif key == key_attr('game_scene_switch', 'bck'):
+        elif key == key_attr('game_scene_switch', 'bck'): # wechselt szene in 'rückwärtzrichtung'
             if isinstance(scene, GameHomeBase):
                 manager.change_scene(GameMap(save_path=scene.save_path))
             elif isinstance(scene, GameSketch):
                 manager.change_scene(GameHomeBase(save_path=scene.save_path))
             elif isinstance(scene, GameMap):
                 manager.change_scene(GameSketch(save_path=scene.save_path))
+        # wächselt zu bestimmter szene
         elif key == key_attr('game_scene_switch', 'base') and not isinstance(scene, GameHomeBase):
             manager.change_scene(GameHomeBase(save_path=scene.save_path))
         elif key == key_attr('game_scene_switch', 'sketch') and not isinstance(scene, GameSketch):
@@ -1746,43 +1820,48 @@ def on_key_down(key, mod, unicode):
 
         return
 
+    #ausführungen im menu
 
     if not getattr(scene, "input", False):
         pass
-    elif isinstance(scene, MenuSzene):
+    elif isinstance(scene, MenuSzene): #eingabe komandos
         if key == key_attr('menu', 'input_back'):
             scene.input_text = scene.input_text[:-1]
             return
 
         if key == key_attr('menu', 'input_lock'):
-            if isinstance(scene, NewGame): # erstellt json bei new game
+            if isinstance(scene, NewGame): #erstellt json bei new game
                 new_game_logik(scene)
-            elif isinstance(scene, ContinueGame): # läd json bei continue game
+            elif isinstance(scene, ContinueGame): #läd json bei continue game
                 continue_game_logik(scene)
             else:
                 print("Entered:", scene.input_text)
 
-            if key == key_attr('menu', 'input_space') and len(scene.input_text) < 32:
+            if key == key_attr('menu', 'input_space') and len(scene.input_text) < 32: #eingabe leerzeichen
                 scene.input_text += " "
                 return
 
-    if unicode:
+    if unicode: #normale zeicheneingabe
         if len(scene.input_text) < 32:
             scene.input_text += unicode
 
 #-------------------------------------------
 #Startet mit dem Hauptmenü
 manager = None
+
+tooltip = ToolTip()
 manager = SceneManager(Menu())
 
 #initiale draw funktion die die aktuelle Szene zeichnet
 def draw():
     screen.clear()
     manager.draw()
+    tooltip.draw()
 
 #frames
 def update():
     manager.update()
+    tooltip.update()
 
 #go
 pgzrun.go()
