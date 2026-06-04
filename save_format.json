@@ -3,11 +3,11 @@
   "created": 0,
   "seed": 0,
   "resources": {
-    "electricity": 50,
+    "electricity": 38,
     "metal": 40,
     "minerals": 85,
     "water": 20,
-    "communication": 55,
+    "communication": 10,
     "money": 10000,
     "science": 0
   },
@@ -16,7 +16,7 @@
     "metal": 100,
     "minerals": 100,
     "water": 100,
-    "communication": 100
+    "communication": 10
   },
   "start_modul_pos": {
     "solar": [[0,5], [3,10]],

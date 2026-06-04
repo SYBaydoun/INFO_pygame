@@ -454,7 +454,7 @@ class BuildMenu():
         self.items = items
         self.actions = self._normalize_actions(actions)
         self.visible = False
-        self.rect = pygame.Rect(0, 0, 240, 280)
+        self.rect = pygame.Rect(0, 0, 240, 300)
         self.rect.topright = (WIDTH - 10, 10)
         self.buttons: list[Button] = []
         self.setup_buttons()
@@ -1354,7 +1354,7 @@ class GameHomeBase(GameScene):
                     self.placing_last_move_time = current_time
 
             # place the object when pressing the place key
-            if getattr(keyboard, gm.get('place', ''), False) and is_space_free(self.save_path, self.placing['type'], self.placing['x'], self.placing['y']):
+            if getattr(keyboard, gm.get('place', ''), False) and is_space_free(self.unlocked_area, self.unlocked_area_border, self.placing['type'], self.placing['x'], self.placing['y']):
                 object_type = self.placing['type']
                 x = int(self.placing['x'])
                 y = int(self.placing['y'])
@@ -1576,18 +1576,40 @@ def calculate_placementspace(object_type: str, x: int, y: int) -> list[list[int,
         return [[x, y], [x - 1, y], [x, y - 1], [x - 1, y - 1]]
 
 
-def is_space_free(save_path: str, object_type: str, x: int, y: int) -> bool:
+def is_space_free(area: list, border: list, object_type: str, x: int, y: int) -> bool:
     global save_data
     checking_koordinates = calculate_placementspace(object_type, x, y)
     placed = save_data.get("placed_objects", []) if save_data else []
-    for pos in checking_koordinates:
-        if pos in placed:
+    
+    # Special handling for miner: must be on border, not in unlocked area
+    if object_type == "miner":
+        if (x, y) not in border:
             return False
+        # Check if already placed
+        pos_tuple = (x, y)
+        if pos_tuple in placed or [x, y] in placed:
+            return False
+        return True
+    
+    # For other objects: validate all placement parts
     for pos in checking_koordinates:
+        # Convert list to tuple for comparison if needed
+        pos_tuple = tuple(pos) if isinstance(pos, list) else pos
+        
+        # Check if already placed
+        if pos_tuple in placed or list(pos_tuple) in placed:
+            return False
+        # Check if out of bounds
         if pos[0] < 0 or pos[1] < 0:
             return False
+        # Check if all parts are in unlocked area
+        if pos_tuple not in area:
+            return False
+        # Check if in border (not allowed for non-miners)
+        if pos_tuple in border:
+            return False
+
     return True
-    # vergleicht die koordinaten
 
 
 def module_resource_manipulation(object_type: str) -> bool:
