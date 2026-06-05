@@ -85,6 +85,27 @@ planet_cesar.set_alpha(PLANET_LOCKED_ALPHA)
 padlock = pygame.image.load("images/padlock.png")
 padlock = pygame.transform.scale(padlock, (PLANETEN_SIZE // 2, PLANETEN_SIZE // 2))
 
+rocket_moduls = {}
+for file in os.listdir("images/rocket_moduls"):
+    path = os.path.join("images/rocket_moduls", file)
+    modul = pygame.image.load(path)
+    orig_width = modul.get_width()
+    orig_height = modul.get_height()
+    if "_smal" in file or "steuer" in file:
+        scale = [40 / orig_width]
+    elif "_medium" in file:
+        scale = [60 / orig_width]
+    elif "medium-" in file:
+        scale = [56 / orig_width ] 
+    elif "trenner" in file:
+        scale = [40 / orig_width, 56 / orig_width, 80 / orig_width]
+    else:
+        scale = [80 / orig_width]
+    for i, sc in enumerate(scale):
+        modul = pygame.transform.scale(modul, (orig_width * sc, orig_height * sc))
+        rocket_moduls[f"{file}{i}"] = modul
+print(rocket_moduls)
+
 #variablen wo ders spielstand der json datei gespeichert, manipuliert und dann wieder in die json gepuscht wird beim speichern
 save_path = None
 save_data = {}
@@ -201,16 +222,17 @@ class SceneManager():
         if self.transitioning:
             return
 
-        # if debug overlay is visible, hide it on any left click and consume the event
         if self.debug_overlay and button == mouse.LEFT:
             self.debug_overlay = False
             return
 
-        # nur scrollrad behandeln
+        # Check for scrollable UI - prioritize rocket_menu if it exists
         if button in (mouse.WHEEL_UP, mouse.WHEEL_DOWN):
-            if hasattr(self.scene, "scrollable_ui") and self.scene.scrollable_ui:
+            if hasattr(self.scene, 'rocket_menu') and self.scene.rocket_menu and self.scene.rocket_menu.visible:
+                if self.scene.rocket_menu.scrollable_ui:
+                    self.scene.rocket_menu.scrollable_ui.handle_scroll(button)
+            elif hasattr(self.scene, "scrollable_ui") and self.scene.scrollable_ui:
                 self.scene.scrollable_ui.handle_scroll(button)
-
         # normale klicks
         if button == mouse.LEFT and hasattr(self.scene, "on_mouse_down"):
             self.scene.on_mouse_down(pos, button)
@@ -545,17 +567,22 @@ class BuildMenu():
         return None
 
 class RocketMenu():
-    def __init__(self, items: list[str]):
+    def __init__(self, items: list[str], title: str):
         self.items = items
+        self.title = title
         self.visible = False
-        self.rect = pygame.Rect(0, 0, 400, 200)
+        self.rect = pygame.Rect(0, 0, 400, 300)
         self.rect.center = (WIDTH // 2, HEIGHT // 2)
         self.scrollable_ui = ScrollableButtons()
         self.scrollable_ui.upper_bound = HEIGHT // 2 - 50
-        self.scrollable_ui.lower_bound = HEIGHT // 2 + 50
+        self.scrollable_ui.lower_bound = HEIGHT // 2 + 100
 
         for item in self.items:
             self.scrollable_ui.add_button(item)
+    
+    def is_click_inside(self, pos):
+        return self.rect.collidepoint(pos)
+
     def toggle(self):
         self.visible = not self.visible
 
@@ -567,8 +594,9 @@ class RocketMenu():
     def draw(self):
         if not self.visible:
             return
-        
         pygame.draw.rect(screen.surface, (0, 9, 64), self.rect, border_radius=12)
+        screen.draw.text(self.title, center=(self.rect.centerx, self.rect.top + 40), fontsize=30, fontname=menu_font(), color="white")
+        
         self.scrollable_ui.draw()
 
     def update(self):
@@ -1115,6 +1143,7 @@ class GameHomeBase(GameScene):
 
         self.controlls = controlls
         self.rocket_menu = None
+        self.scrollable_ui = None
 
         self.unlocked_area = self.unlocked_area_border_floodsearch(0, 0, area=True)
         self.unlocked_area_border = self.unlocked_area_border_floodsearch(0, 0, area=False)
@@ -1537,7 +1566,20 @@ class GameHomeBase(GameScene):
         
     def on_mouse_down(self, pos, button):
         super().on_mouse_down(pos, button)
+        
         if button == mouse.LEFT:
+            # If rocket menu is visible and click is outside, close it
+            if self.rocket_menu and self.rocket_menu.visible:
+                if not self.rocket_menu.is_click_inside(pos):
+                    self.rocket_menu.close()
+                    return
+                # If click is inside, handle menu clicks
+                result = self.rocket_menu.scrollable_ui.on_click(pos)
+                if result:
+                    print(f"Selected: {result}")  # Do something with the result
+                return
+            
+            # Original rocket menu opening logic
             print(pos)
             x, y = self.screen_to_iso(pos[0], pos[1])
             rr = calculate_placementspace("rocket", save_data["start_modul_pos"]["rocket"][0], save_data["start_modul_pos"]["rocket"][1])
@@ -1550,9 +1592,9 @@ class GameHomeBase(GameScene):
                     print("yay")
                     index = rr.index(pos)
                     print(pos, rr[index - index % 4])
-                    self.rocket_menu = RocketMenu(['test1', 'test2', 'test3', 'tes4', 'test5'])
-                    self.rocket_menu.toggle()
-                    self.rocket_menu.draw()
+                    self.rocket_menu = RocketMenu(['test1', 'test2', 'test3', 'tes4', 'test5'], f"Rocket at {rr[index - index % 4]}")
+                    self.rocket_menu.open()
+                    return
 
 #Scene Game Sketch
 class GameSketch(GameScene):
@@ -1566,7 +1608,48 @@ class GameSketch(GameScene):
     def draw(self):
 
         bliting_bg("bg_blueprint.jpg")
+        x1= 0
+        x2 = 0
+        for filename, modul in rocket_moduls.items():
+            if "tr_" in filename:
+                screen.blit(modul, (x1, 100))
+                x1+=80
+            else:
+                screen.blit(modul, (x2, 300))
+                x2+=80
+        center_x = WIDTH - 100
+        y = 100
 
+        trenner_small = rocket_moduls["trenner.png0"]
+        trenner_medium = rocket_moduls["trenner.png1"]
+        faring = rocket_moduls["faring_big.png0"]
+        steuereinheit = rocket_moduls["steuereinheit.png0"]
+        fuel_small = rocket_moduls["fuel_smal.png0"]
+        medium_small = rocket_moduls["medium-smal.png0"]
+        fuel_medium = rocket_moduls["fuel_medium.png0"]
+        tr_Vak_medium = rocket_moduls["tr_Vak_medium.png0"]
+        tr_SL_medium = rocket_moduls["tr_SL_medium.png0"]
+        screen.blit(faring, (center_x - faring.get_width() // 2, y))
+        y+=faring.get_height()
+        screen.blit(trenner_small, (center_x - trenner_small.get_width() // 2, y))
+        y+=trenner_small.get_height()
+        screen.blit(steuereinheit, (center_x - steuereinheit.get_width() // 2, y))
+        y += steuereinheit.get_height()
+        screen.blit(fuel_small, (center_x - fuel_small.get_width() // 2, y))
+        y += fuel_small.get_height()
+        screen.blit(medium_small, (center_x - medium_small.get_width() // 2, y))
+        y += medium_small.get_height()
+        screen.blit(tr_Vak_medium, (center_x - tr_Vak_medium.get_width() // 2, y))
+        y+= tr_Vak_medium.get_height()
+        screen.blit(trenner_medium, (center_x - trenner_medium.get_width() // 2, y))
+        y+= trenner_medium.get_height()
+        screen.blit(fuel_medium, (center_x - fuel_medium.get_width() // 2, y))
+        y+= fuel_medium.get_height()
+        screen.blit(fuel_medium, (center_x - fuel_medium.get_width() // 2, y))
+        y+= fuel_medium.get_height()
+        screen.blit(fuel_medium, (center_x - fuel_medium.get_width() // 2, y))
+        y+= fuel_medium.get_height()
+        screen.blit(tr_SL_medium, (center_x - tr_SL_medium.get_width() // 2, y))
         self.draw_ui()
 
     def update(self):
