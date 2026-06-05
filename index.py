@@ -1802,6 +1802,7 @@ class GameOver():
     def update():
         pass
 
+
 #-------------------------------------------
 #Hintergrund laden und skalieren
 backgrounds = {}
@@ -2023,9 +2024,8 @@ def miner_return(element: list[tuple[int, int, int, int]], change_lib: dict = st
         else:
             save_data["resources"][resource] += change
 
-
+#checkt alles für raketenstart und führt ihn aus
 def launch_rocket(rocket_type: str, orbit: str, lounch_pos: list):
-    """Launch a rocket with satellites to the specified orbit"""
     global save_data
     
     # Check if rocket type exists
@@ -2084,7 +2084,6 @@ def launch_rocket(rocket_type: str, orbit: str, lounch_pos: list):
     print(f"Satellites in {orbit}: {save_data[sat_key]}")
     
     return True
-
 
 #setzt die buttonkollision für die szenen um
 def on_mouse_down(pos, button):
