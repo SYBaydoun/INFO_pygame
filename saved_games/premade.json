@@ -3,19 +3,19 @@
   "created": "20260605031245",
   "seed": 163442,
   "resources": {
-    "electricity": 120,
-    "metal": 0,
-    "minerals": 20,
-    "water": 30,
+    "electricity": 118,
+    "metal": 20,
+    "minerals": 40,
+    "water": 35,
     "communication": 10,
-    "money": 5000,
+    "money": 4350,
     "science": 0
   },
   "resource_max": {
     "electricity": 152,
-    "metal": 100,
-    "minerals": 100,
-    "water": 100,
+    "metal": 120,
+    "minerals": 104,
+    "water": 105,
     "communication": 20
   },
   "start_modul_pos": {
@@ -137,8 +137,13 @@
     ]
   },
   "base": {
-    "number": 1,
-    "extra_pos": []
+    "number": 2,
+    "extra_pos": [
+      [
+        2,
+        2
+      ]
+    ]
   },
   "rocket": {
     "number": 0,
@@ -203,6 +208,18 @@
     ],
     [
       12,
+      2
+    ],
+    [
+      10,
+      2
+    ],
+    [
+      11,
+      2
+    ],
+    [
+      13,
       2
     ]
   ],
@@ -390,6 +407,22 @@
     [
       3,
       3
+    ],
+    [
+      2,
+      2
+    ],
+    [
+      1,
+      2
+    ],
+    [
+      2,
+      1
+    ],
+    [
+      1,
+      1
     ]
   ],
   "antenne": {
