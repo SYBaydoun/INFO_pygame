@@ -4,11 +4,11 @@
   "seed": 163442,
   "resources": {
     "electricity": 120,
-    "metal": 100,
-    "minerals": 40,
-    "water": 100,
-    "communication": 20,
-    "money": 6000,
+    "metal": 0,
+    "minerals": 20,
+    "water": 30,
+    "communication": 10,
+    "money": 5000,
     "science": 0
   },
   "resource_max": {
@@ -33,10 +33,7 @@
       2,
       4
     ],
-    "rocket": [
-      4,
-      9
-    ],
+    "rocket": null,
     "antenne": [
       9,
       9
@@ -144,7 +141,7 @@
     "extra_pos": []
   },
   "rocket": {
-    "number": 1,
+    "number": 0,
     "extra_pos": []
   },
   "miner": {
@@ -165,7 +162,7 @@
       "GEO": 1
     }
   },
-  "satelitenLEO": 0,
+  "satelitenLEO": 4,
   "satelitenGEO": 0,
   "progress": [
     [
@@ -285,22 +282,6 @@
     [
       1,
       3
-    ],
-    [
-      4,
-      9
-    ],
-    [
-      3,
-      9
-    ],
-    [
-      4,
-      8
-    ],
-    [
-      3,
-      8
     ],
     [
       7,

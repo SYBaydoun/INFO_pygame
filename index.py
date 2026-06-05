@@ -10,14 +10,15 @@ from collections.abc import Callable
 # öffnet das verfluchte Fenster zentriert, warum auch immer das nicht automatisch passiert
 os.environ['SDL_VIDEO_CENTERED'] = '1'
 
-#Parameter
+# ===== GAME WINDOW CONFIGURATION =====
 WIDTH  = 1200
 HEIGHT = 800
-
 TITLE = "FeiniSpaceAgency"
+
+# ===== UI TEXT =====
 creditMsg = "Game developed by:\nShahin Youssef Baydoun\nIdea by:\nMe\nGraphics by:\nMyself\nTested by:\nand I\nMoralische Unterstützung:\nAlinchen Bienchen :)\ntest"
 
-#Buttons im Menübereich
+# ===== MENU ITEM CONFIGURATION =====
 menuLibrary = {"menu_items": ["Start New Game", "Continue Game", "Settings", "Credits", "Quit"],
                "new_items": ["Back"],
                "continue_items": ["Back"],
@@ -25,27 +26,20 @@ menuLibrary = {"menu_items": ["Start New Game", "Continue Game", "Settings", "Cr
                "credits_items": ["Back"]
                }
 
-#mausrat offset
-offset = 0
+# ===== GAME VARS =====
 
-#Game Variables
+offset = 0 #mausrat offset
 MAP_SIZE = 10
 icon_size = (24, 24)
 TILE_WIDTH = 128
 TILE_HEIGHT = 64
+OFFSET_X = WIDTH // 2 #anfangs x position isometric koordinatenursprung
+OFFSET_Y = 600 #anfangs y position isometric koordinatenursprung
+HEIGHT_STEP = 52 #verticales spacing <- nicht 64, damit dahinterliegende niedrigere blöcke gesehen werden können
 
-#koordinatenursprungs anfangsposition
-OFFSET_X = WIDTH // 2
-OFFSET_Y = 600
+# ===== MAP AND TILESET =====
+tilemap = [[0 for x in range(MAP_SIZE)] for y in range(MAP_SIZE)]
 
-HEIGHT_STEP = 52 #<- nicht 64, damit dahinterliegende niedrigere blöcke gesehen werden können
-
-#sart fläche für die map, wird später durch die höhenfunktion ersetzt
-tilemap = [
-    [0 for x in range(MAP_SIZE)] for y in range(MAP_SIZE)
-]
-
-#die verschiedenen höhen
 tiles = {
     0: "surface_bottom",
     1: "surface_light",
@@ -53,16 +47,18 @@ tiles = {
     3: "surface_dark",
 }
 
-#Bilder der Module Laden
+# ===== LOAD PLACEBLE MODULS =====
 solar = pygame.image.load("images/solar.png")
 base = pygame.image.load("images/base.png")
 rocket = pygame.image.load("images/rocket.png")
 miner = pygame.image.load("images/miner.png")
 antenne = pygame.image.load("images/antenne.png")
 
+# ===== LOAD & SCALE PLANET IMAGES =====
 PLANETEN_SIZE = 250
 PLANET_Y_OFFSET = 100
-PLANET_LOCKED_ALPHA = 130
+PLANET_LOCKED_ALPHA = 130 # alphawert für gesperrte planeten
+
 planet_kyra = pygame.image.load("images/planet03.png")
 planet_maya = pygame.image.load("images/planet04.png")
 planet_olga = pygame.image.load("images/planet05.png")
@@ -82,15 +78,19 @@ planet_olga.set_alpha(PLANET_LOCKED_ALPHA)
 planet_nell.set_alpha(PLANET_LOCKED_ALPHA)
 planet_kyra.set_alpha(PLANET_LOCKED_ALPHA)
 planet_cesar.set_alpha(PLANET_LOCKED_ALPHA)
+
 padlock = pygame.image.load("images/padlock.png")
 padlock = pygame.transform.scale(padlock, (PLANETEN_SIZE // 2, PLANETEN_SIZE // 2))
 
+# ===== LOAD & SCALE ROCKET MODULS =====
 rocket_moduls = {}
 for file in os.listdir("images/rocket_moduls"):
     path = os.path.join("images/rocket_moduls", file)
     modul = pygame.image.load(path)
     orig_width = modul.get_width()
     orig_height = modul.get_height()
+
+    #bestimmt grösse je nach modul grösse
     if "_smal" in file or "steuer" in file:
         scale = [40 / orig_width]
     elif "_medium" in file:
@@ -101,23 +101,30 @@ for file in os.listdir("images/rocket_moduls"):
         scale = [40 / orig_width, 56 / orig_width, 80 / orig_width]
     else:
         scale = [80 / orig_width]
+    
+    #kreirt grössen für jeden faktor, falls ein png für mehrere grössen
     for i, sc in enumerate(scale):
         modul = pygame.transform.scale(modul, (orig_width * sc, orig_height * sc))
         rocket_moduls[f"{file}{i}"] = modul
-print(rocket_moduls)
 
+# ===== LOAD & SCALE FSA_LOGO =====
+fsa_logo = pygame.image.load("images/fsa_logo_o.png")
+fsa_logo = pygame.transform.scale(fsa_logo, (500, 500))
+fsa_logo.set_alpha(200)
+
+# ===== GAME STATE VARS =====
 #variablen wo ders spielstand der json datei gespeichert, manipuliert und dann wieder in die json gepuscht wird beim speichern
 save_path = None
 save_data = {}
 controlls = {}
 
-#veränderungen beim plazieren oder interagieren der module
+# ===== MODULE STATS & RESOURCE CHANGES =====
 stats_change_libary = {
     "solar": {"resources": {"electricity": 4, "metal": -10, "minerals": -5, "water": 0, "communication": 0, "money": -100, "science": 0},
               "resource_max": {"electricity": 4, "metal": 0, "minerals": 0, "water": 0, "communication": 0},
               },
     "base": {"resources": {"electricity": -2, "metal": -30, "minerals": -10, "water": -10, "communication": 0, "money": -200, "science": 0},
-             "resource_max": {"electricity": 0, "metal": 20, "minerals": 4, "water": 0, "communication": 0},
+             "resource_max": {"electricity": 0, "metal": 20, "minerals": 4, "water": 5, "communication": 0},
              },
     "rocket": {"resources": {"electricity": -10, "metal": -50, "minerals": -20, "water": -50, "communication": 0, "money": -500, "science": 0},
                "resource_max": {"electricity": 0, "metal": 0, "minerals": 0, "water": 0, "communication": 0},
@@ -199,7 +206,7 @@ class SceneManager():
         self.scene.draw()
 
         # draw debug overlay text on top of the scene when enabled
-        if getattr(self, 'debug_overlay', False):
+        if getattr(self, 'debug_overlay', False): # append the stats for the lines
             lines = []
             lines.append(f"Scene: {self.scene.__class__.__name__}")
             if hasattr(self.scene, 'noise'):
@@ -209,9 +216,17 @@ class SceneManager():
                     lines.append(f"Camera: {self.scene.camera_x:.2f}, {self.scene.camera_y:.2f}")
             except Exception:
                 pass
+            for resource_max in save_data["resource_max"]:
+                lines.append(f"{resource_max}_max: {save_data["resource_max"][resource_max]}")
+                lines.append(f"{resource_max}: {save_data["resources"][resource_max]}")
+            lines.append(f"sateliten in LEO: {save_data["satelitenLEO"]}")
+            lines.append(f"sateliten in GEO: {save_data["satelitenGEO"]}")
+            for objects in stats_change_libary:
+                for types in stats_change_libary[objects]:
+                    lines.append(f"{objects, types}: {stats_change_libary[objects][types]}")
 
             y = 10
-            for line in lines:
+            for line in lines: #positioning of lines
                 screen.draw.text(line, (10, y), fontsize=18, color="white")
                 y += 20
 
@@ -226,7 +241,7 @@ class SceneManager():
             self.debug_overlay = False
             return
 
-        # Check for scrollable UI - prioritize rocket_menu if it exists
+        # Check for scrollable UI - prioritise rocket_menu if it exists
         if button in (mouse.WHEEL_UP, mouse.WHEEL_DOWN):
             if hasattr(self.scene, 'rocket_menu') and self.scene.rocket_menu and self.scene.rocket_menu.visible:
                 if self.scene.rocket_menu.scrollable_ui:
@@ -297,6 +312,7 @@ class Button():
         self.offset_y = 0
         self.target_offset_y = 0
 
+        # rgb werte inside und outside
         self.r_inside = r_inside
         self.g_inside = g_inside
         self.b_inside = b_inside
@@ -322,7 +338,7 @@ class Button():
             if self.tooltip_text:
                 tooltip.hide(owner=self)
 
-        speed = 0.12
+        speed = 0.12 # speed of transitioning of hover effeect
 
         self.alpha += (self.target_alpha - self.alpha) * speed
         self.glow_alpha += (self.target_glow - self.glow_alpha) * speed
@@ -338,6 +354,7 @@ class Button():
         #button
         button_surface = pygame.Surface((width, height), pygame.SRCALPHA)
 
+        # inner
         pygame.draw.rect(
             button_surface,
             (self.r_inside, self.g_inside, self.b_inside, int(self.alpha)),
@@ -389,8 +406,8 @@ class ScrollableButtons():
             self.offset += self.scroll_speed
 
     def update(self):
-        for b in self.buttons:
-            b.update()
+        for btn in self.buttons:
+            btn.update()
 
     def draw(self):
         for i, button in enumerate(self.buttons):
@@ -413,8 +430,8 @@ class ScrollableButtons():
         return None
     
     def update(self):
-        for button in self.buttons:
-            button.update()
+        for btn in self.buttons:
+            btn.update()
 
 #Button mit Icon statt Text
 class IconButton(Button):
@@ -566,6 +583,7 @@ class BuildMenu():
 
         return None
 
+#Rocket Menu in HomeBase -> zum starten von raketen
 class RocketMenu():
     def __init__(self, items: list[str | list[str]], title: str):
         self.items = items
@@ -608,11 +626,8 @@ class RocketMenu():
     def on_mouse_down(self):
         if self.scrollable_ui:
             self.scrollable_ui.on_click()
-
-
-
     
-
+#Tooltip leider noch nicht implementet -> kann ignoriert werden
 class ToolTip():
     def __init__(self, objeckt=None, text="", font_size: int = 22, padding: int = 12, bg_color=(20, 20, 30, 220), outline_color=(140, 180, 230), text_color="white", border_radius: int = 12, offset=(16, 16)):
         self.objeckt = objeckt
@@ -689,6 +704,7 @@ class ToolTip():
                 color=self.text_color
             )
 
+
 #-------------------------------------------
 #Vererbende Class Für die Menü Szenen
 class MenuSzene():
@@ -724,6 +740,8 @@ class MenuSzene():
 
     def draw(self):
         bliting_bg(self.draw_bg)
+        screen.blit(fsa_logo, (WIDTH // 2 - 250, 180))
+        #screen.blit(fsa_logo, (WIDTH - 200, 10))
         screen.draw.text(
             self.title,
             center=(WIDTH // 2, 120),
@@ -946,6 +964,10 @@ class GameScene():
             "communication": (200, 120, 255),
         }
 
+        # Satellite resource generation timer
+        self.satellite_resource_timer = 0
+        self.satellite_resource_interval = 36000  # 10 minutes at 60 FPS
+
     def refresh_resources(self):
         global save_data
         self.resources["electricity"]["current"] = save_data["resources"]["electricity"]
@@ -1084,12 +1106,61 @@ class GameScene():
             self.right_corner_button.icon = self.get_rcorner_button_icon()
             self.right_corner_button.draw()
             
-    
-
     def draw_ui(self):
         self.draw_resource_bars()
         self.draw_top_stats()
         self.draw_corner_buttons()
+
+    def generate_satellite_resources(self):
+        """Generate resources from satellites in orbit"""
+        global save_data
+        
+        # LEO satellite resources per satellite
+        leo_resources = {
+            "electricity": 0,
+            "metal": 0,
+            "minerals": 0,
+            "water": 0,
+            "communication": 0,
+            "money": 30,
+            "science": 10
+        }
+        
+        # GEO satellite resources per satellite
+        geo_resources = {
+            "electricity": 0,
+            "metal": 0,
+            "minerals": 0,
+            "water": 0,
+            "communication": 0,
+            "money": 100,
+            "science": 50
+        }
+        
+        # Process LEO satellites
+        leo_count = save_data.get("satelitenLEO", 0)
+        for resource, amount in leo_resources.items():
+            total = amount * leo_count
+            if resource in save_data["resources"]:
+                save_data["resources"][resource] += total
+            elif resource == "money":
+                save_data["resources"]["money"] += total
+            elif resource == "science":
+                save_data["resources"]["science"] += total
+        
+        # Process GEO satellites
+        geo_count = save_data.get("satelitenGEO", 0)
+        for resource, amount in geo_resources.items():
+            total = amount * geo_count
+            if resource in save_data["resources"]:
+                save_data["resources"][resource] += total
+            elif resource == "money":
+                save_data["resources"]["money"] += total
+            elif resource == "science":
+                save_data["resources"]["science"] += total
+        
+        print(f"Generated resources from {leo_count} LEO and {geo_count} GEO satellites")
+        self.refresh_resources()
 
     def draw(self):
         pass
@@ -1099,6 +1170,12 @@ class GameScene():
         self.right_corner_button.update()
         if hasattr(self, "build_menu"):
             self.build_menu.update()
+
+        # Check satellite resources
+        self.satellite_resource_timer += 1
+        if self.satellite_resource_timer >= self.satellite_resource_interval:
+            self.satellite_resource_timer = 0
+            self.generate_satellite_resources()
 
     def on_enter(self):
         pass
@@ -1158,6 +1235,7 @@ class GameHomeBase(GameScene):
                 (128, 128)
             )
 
+        # libary mit offsets etc. für die placier funktion
         self.buildable_types = {
             "solar": {
                 "label": "Solar",
@@ -1312,6 +1390,8 @@ class GameHomeBase(GameScene):
                 return 0
         else:
             return target
+    
+    #floodsearch algorythmus, der freigelegte area trackt und border
     def unlocked_area_border_floodsearch(self, x: int = 0, y: int = 0, border: list[tuple[int, int]] = None, unlocked: list[tuple[int, int]] = None, area: bool = False) -> list[tuple[int, int]]:
         # Initialize fresh lists if not provided (avoids mutable default argument bug)
         if border is None:
@@ -1339,11 +1419,11 @@ class GameHomeBase(GameScene):
                 self.unlocked_area_border_floodsearch(nx, ny, border, unlocked)
         return unlocked if area else border
     
-    def check_mining(self, save_path: str):
+    def check_mining(self):
         global save_data
         mining_positions = save_data.get("mining_position", []) if save_data else []
         for element in list(mining_positions):
-            if element[2] <= time.time():
+            if element[2] <= time.time(): # prüft die ablaufzeit wann bohrung vollendet ist
                 save_data["mining_position"].remove(element)
                 save_data["miner"]["number"] -= 1
                 save_data["miner"]["extra_pos"].remove([element[0], element[1]])
@@ -1362,7 +1442,7 @@ class GameHomeBase(GameScene):
             else:
                 continue
 
-
+    # isometrische rechnungen ===>
     def iso_to_screen(self, x: int, y: int) -> float:
 
         x -= self.camera_x
@@ -1397,24 +1477,19 @@ class GameHomeBase(GameScene):
         y += self.camera_y
 
         return x, y
-
+    # <===
 
     def draw(self):
-
         screen.fill((40, 40, 60))
 
+        #zeichnet tiles nur dann wenn sie sichtbar sein müssen
         for y in reversed(range(int(self.camera_y) - 20, int(self.camera_y) + 20)):
-
             for x in reversed(range(int(self.camera_x) - 20, int(self.camera_x) + 20)):
-
                 if x >= 0 and y >= 0:
-
                     h = self.get_height(x, y)
-
                     base_x, base_y = self.iso_to_screen(x, y)
 
                     for level in range(int(h) + 1):
-
                         screen_x = base_x
                         screen_y = base_y - level * HEIGHT_STEP
 
@@ -1428,6 +1503,7 @@ class GameHomeBase(GameScene):
                             )
                         )
         
+        #plazierung der start solarmodul fläche
         eckpunkte = save_data["start_modul_pos"]["solar"]
         x_min, y_min, x_max, y_max = koordinaten_netz(eckpunkte)
         
@@ -1442,7 +1518,8 @@ class GameHomeBase(GameScene):
                         screen_y - TILE_HEIGHT // 2 - 10
                     )
                 )
-        # draw runtime placed objects
+
+        # draw placed objects
         for object_type, positions in self.placed_objects.items():
             if object_type not in self.buildable_types:
                 continue
@@ -1472,6 +1549,9 @@ class GameHomeBase(GameScene):
                 except Exception:
                     pass
                 screen.surface.blit(icon, (screen_x + offset_x, screen_y + offset_y))
+        
+        # startmodule neben solarzellen ===>
+        # muss none checken weil so gespeichert wenn die rakete gestartet wird
         if save_data["start_modul_pos"]["rocket"] is not None:
             x, y = save_data["start_modul_pos"]["rocket"]
             screen_x, screen_y = self.iso_to_screen(x, y)
@@ -1484,6 +1564,7 @@ class GameHomeBase(GameScene):
         x, y = save_data["start_modul_pos"]["antenne"]
         screen_x, screen_y = self.iso_to_screen(x, y)
         screen.surface.blit(self.antenne_scaled, (screen_x - TILE_WIDTH, screen_y - TILE_HEIGHT))
+        # <===
 
         if self.rocket_menu:
             self.rocket_menu.draw()
@@ -1504,6 +1585,7 @@ class GameHomeBase(GameScene):
             if current_time - self.placing_last_move_time >= self.placing_move_delay:
                 moved = False
 
+                # ifbedingungen prüfen ob der move auf ein legales feld im algemeinen fällt, noch keine objektkollision 
                 if getattr(keyboard, gm.get('left', ''), False) and ((self.placing['x'] + 1, self.placing['y']) in self.unlocked_area or (self.placing["type"] == "miner" and (self.placing['x'], self.placing['y']) in self.unlocked_area)):
                     self.placing['x'] = current_x + 1
                     moved = True
@@ -1520,7 +1602,7 @@ class GameHomeBase(GameScene):
                 if moved:
                     self.placing_last_move_time = current_time
 
-            # place the object when pressing the place key
+            # place the object when pressing the place key, jetzt auch objectkollisionscheck bevor place
             if getattr(keyboard, gm.get('place', ''), False) and is_space_free(self.unlocked_area, self.unlocked_area_border, self.placing['type'], self.placing['x'], self.placing['y']):
                 object_type = self.placing['type']
                 x = int(self.placing['x'])
@@ -1536,8 +1618,7 @@ class GameHomeBase(GameScene):
                         self.placed_objects.setdefault(object_type, []).append((x, y))
                         self.placing = None
 
-        # camera movement (original behaviour)
-
+        # camera movement
         if any(getattr(keyboard, key) for key in self.controlls['movement']['boost']):    
             boost = 3
         else:
@@ -1560,7 +1641,7 @@ class GameHomeBase(GameScene):
             if getattr(keyboard, self.controlls['movement']['right']):
                 self.camera_x -= self.camera_speed * boost
                 self.camera_y += self.camera_speed * boost
-        self.check_mining(self.save_path)
+        self.check_mining()
 
         if self.rocket_menu:
             self.rocket_menu.update()
@@ -1592,7 +1673,7 @@ class GameHomeBase(GameScene):
                             print("Launch failed!")
                 return
             
-            # Original rocket menu opening logic
+            # rocket menu verfügbare racketenstarts (typ und orbit)
             rocket_modelle = []
             for varianten in save_data["rockets"]:
                 if save_data["rockets"][varianten]["GEO"] > 0:
@@ -1603,7 +1684,6 @@ class GameHomeBase(GameScene):
                 else:
                     continue
             
-            print(pos)
             x, y = self.screen_to_iso(pos[0], pos[1])
             if save_data["start_modul_pos"]["rocket"] is not None:
                 rr = calculate_placementspace("rocket", save_data["start_modul_pos"]["rocket"][0], save_data["start_modul_pos"]["rocket"][1])
@@ -1615,26 +1695,20 @@ class GameHomeBase(GameScene):
             
             for pos in rr:
                 if abs(pos[0] - x) <= 0.5 and abs(pos[1] - y) <= 0.5:
-                    print("yay")
                     index = rr.index(pos)
-                    rocket_pos = rr[index - index % 4]
-                    print(pos, rocket_pos)
+                    rocket_pos = rr[index - index % 4] # verweist auf die wurzel der vier blockierten koordinaten, wo die rackete gespeichert ist
                     self.rocket_menu = RocketMenu(rocket_modelle, f"Rocket at {rocket_pos}")
                     self.rocket_menu.launch_pos = rocket_pos  # Speichere die Position
                     self.rocket_menu.open()
                     return
 
-#Scene Game Sketch
+#Scene Game Sketch <- leider nicht vollständig implementiert
 class GameSketch(GameScene):
-
     def __init__(self, save_path=None):
-
         super().__init__(save_path)
-
         self.save_path = save_path
 
     def draw(self):
-
         bliting_bg("bg_blueprint.jpg")
         x1= 0
         x2 = 0
@@ -1645,7 +1719,8 @@ class GameSketch(GameScene):
             else:
                 screen.blit(modul, (x2, 300))
                 x2+=80
-    
+
+        # plazieren aller module und überprüfung ob sie zusammen passen visuel
         center_x = WIDTH - 100
         y = 100
 
@@ -1684,7 +1759,7 @@ class GameSketch(GameScene):
     def update(self):
         super().update()
 
-#Scene Game Map
+#Scene Game Map <- leider nicht vollständig implementiert, nur ein planet zur verfügung
 class GameMap(GameScene):
     def __init__(self, save_path=None):
         super().__init__(save_path)
@@ -1692,6 +1767,8 @@ class GameMap(GameScene):
     
     def draw(self):
         bliting_bg("bg_nightsky.jpg")
+
+        # die planeten bliten
         screen.blit(planet_sina, (WIDTH // 2 - PLANETEN_SIZE // 2, PLANET_Y_OFFSET))
         screen.blit(planet_kyra, (WIDTH // 6 - PLANETEN_SIZE // 2, PLANET_Y_OFFSET))
         screen.blit(planet_maya, (WIDTH * 5 // 6 - PLANETEN_SIZE // 2, PLANET_Y_OFFSET))
@@ -1708,6 +1785,18 @@ class GameMap(GameScene):
     
     def update(self):
         super().update()
+
+
+#-------------------------------------------
+#Game Over wenn nichts mehr plaziert werden kann
+class GameOver():
+    def __init__(self):
+        pass
+
+    def draw():
+        pass
+    def update():
+        pass
 
 #-------------------------------------------
 #Hintergrund laden und skalieren
@@ -1991,6 +2080,7 @@ def launch_rocket(rocket_type: str, orbit: str, lounch_pos: list):
     print(f"Satellites in {orbit}: {save_data[sat_key]}")
     
     return True
+
 
 #setzt die buttonkollision für die szenen um
 def on_mouse_down(pos, button):
