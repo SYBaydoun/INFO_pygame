@@ -263,10 +263,14 @@ class SceneManager():
 
         if self.phase == 1:
             progress = min(self.t / duration, 1)
+            if self.t == 1:
+                door_sound.play()
         elif self.phase == 2:
             progress = 1
         else:
             progress = 1 - min(self.t / duration, 1)
+            if self.t == 1:
+                door_sound.play()
 
         progress = progress * progress * (3 - 2 * progress)
 
