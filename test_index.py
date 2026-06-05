@@ -1050,6 +1050,7 @@ class GameScene():
         self.right_corner_button.update()
         if hasattr(self, "build_menu"):
             self.build_menu.update()
+        
 
     def on_enter(self):
         pass

@@ -17,6 +17,8 @@ TITLE = "FeiniSpaceAgency"
 
 # ===== UI TEXT =====
 creditMsg = "Game developed by:\nShahin Youssef Baydoun\nIdea by:\nMe\nGraphics by:\nMyself\nTested by:\nand I\nMoralische Unterstützung:\nAlinchen Bienchen :)\ntest"
+GAMEOVER_MSG = "You have run out of resources!\nYou can no longer place miners.\nGame Over!"
+
 
 # ===== MENU ITEM CONFIGURATION =====
 menuLibrary = {"menu_items": ["Start New Game", "Continue Game", "Settings", "Credits", "Quit"],
@@ -1181,6 +1183,27 @@ class GameScene():
             self.satellite_resource_timer = 0
             self.generate_satellite_resources()
 
+        # ===== CHECK FOR GAME OVER =====
+        if not isinstance(self, GameOver):
+            miner_count = save_data.get("miner", {}).get("number", 0)
+            
+            if miner_count == 0:
+                # Teste ob genug Ressourcen für einen Miner vorhanden sind (ohne wirklich zu deducten)
+                # Kopiere save_data temporal zum testen
+                test_data = save_data.copy()
+                
+                # Prüfe ob Miner kaufbar ist
+                can_afford = True
+                for resource, cost in stats_change_libary["miner"]["resources"].items():
+                    if test_data["resources"].get(resource, 0) + cost < 0:
+                        can_afford = False
+                        break
+                
+                if not can_afford:
+                    write_save_data()
+                    manager.change_scene(GameOver(save_path=self.save_path))
+                    return
+
     def on_enter(self):
         pass
 
@@ -1793,15 +1816,38 @@ class GameMap(GameScene):
 
 #-------------------------------------------
 #Game Over wenn nichts mehr plaziert werden kann
-class GameOver():
-    def __init__(self):
+class GameOver(GameScene):
+    def __init__(self, save_path: str = None):
+        super().__init__(save_path)
+        self.save_path = save_path
+
+    def draw(self):
+        # Grauer Hintergrund
+        screen.fill((80, 80, 80))
+        
+        # Weiße Schrift in der Mitte
+        lines = GAMEOVER_MSG.split("\n")
+        total_height = len(lines) * 60
+        start_y = HEIGHT // 2 - total_height // 2
+        
+        for i, line in enumerate(lines):
+            screen.draw.text(
+                line,
+                center=(WIDTH // 2, start_y + i * 60),
+                fontsize=50,
+                color="white"
+            )
+        
+        self.draw_ui()
+
+    def update(self):
+        super().update()
+
+    def on_enter(self):
         pass
 
-    def draw():
+    def on_exit(self):
         pass
-    def update():
-        pass
-
 
 #-------------------------------------------
 #Hintergrund laden und skalieren
