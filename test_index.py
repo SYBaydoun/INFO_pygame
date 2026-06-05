@@ -1401,7 +1401,7 @@ class GameHomeBase(GameScene):
                 except Exception:
                     pass
                 screen.surface.blit(icon, (screen_x + offset_x, screen_y + offset_y))
-
+        
         x, y = save_data["start_modul_pos"]["rocket"]
         screen_x, screen_y = self.iso_to_screen(x, y)
         screen.surface.blit(self.rocket_scaled, (screen_x - TILE_WIDTH, screen_y - TILE_HEIGHT))

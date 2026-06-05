@@ -567,7 +567,7 @@ class BuildMenu():
         return None
 
 class RocketMenu():
-    def __init__(self, items: list[str], title: str):
+    def __init__(self, items: list[str | list[str]], title: str):
         self.items = items
         self.title = title
         self.visible = False
@@ -578,7 +578,8 @@ class RocketMenu():
         self.scrollable_ui.lower_bound = HEIGHT // 2 + 100
 
         for item in self.items:
-            self.scrollable_ui.add_button(item)
+            text = f"{item[0]} -> {item[1]}" if isinstance(item, list) else item
+            self.scrollable_ui.add_button(text)
     
     def is_click_inside(self, pos):
         return self.rect.collidepoint(pos)
@@ -1471,10 +1472,10 @@ class GameHomeBase(GameScene):
                 except Exception:
                     pass
                 screen.surface.blit(icon, (screen_x + offset_x, screen_y + offset_y))
-
-        x, y = save_data["start_modul_pos"]["rocket"]
-        screen_x, screen_y = self.iso_to_screen(x, y)
-        screen.surface.blit(self.rocket_scaled, (screen_x - TILE_WIDTH, screen_y - TILE_HEIGHT))
+        if save_data["start_modul_pos"]["rocket"] is not None:
+            x, y = save_data["start_modul_pos"]["rocket"]
+            screen_x, screen_y = self.iso_to_screen(x, y)
+            screen.surface.blit(self.rocket_scaled, (screen_x - TILE_WIDTH, screen_y - TILE_HEIGHT))
         
         x, y = save_data["start_modul_pos"]["base"]
         screen_x, screen_y = self.iso_to_screen(x, y)
@@ -1573,16 +1574,41 @@ class GameHomeBase(GameScene):
                 if not self.rocket_menu.is_click_inside(pos):
                     self.rocket_menu.close()
                     return
+                
                 # If click is inside, handle menu clicks
                 result = self.rocket_menu.scrollable_ui.on_click(pos)
                 if result:
-                    print(f"Selected: {result}")  # Do something with the result
+                    # Parse the result to get rocket type and orbit
+                    # Result format: "rocket_type -> orbit"
+                    parts = result.split(" -> ")
+                    if len(parts) == 2:
+                        rocket_type, orbit = parts[0].strip(), parts[1].strip()
+                        # Launch the rocket with the stored launch position
+                        if launch_rocket(rocket_type, orbit, self.rocket_menu.launch_pos):
+                            self.rocket_menu.close()
+                            self.refresh_resources()
+                            write_save_data()  # Save to JSON
+                        else:
+                            print("Launch failed!")
                 return
             
             # Original rocket menu opening logic
+            rocket_modelle = []
+            for varianten in save_data["rockets"]:
+                if save_data["rockets"][varianten]["GEO"] > 0:
+                    rocket_modelle.append([varianten, "LEO"])
+                    rocket_modelle.append([varianten, "GEO"])
+                elif save_data["rockets"][varianten]["LEO"] > 0:
+                    rocket_modelle.append([varianten, "LEO"])
+                else:
+                    continue
+            
             print(pos)
             x, y = self.screen_to_iso(pos[0], pos[1])
-            rr = calculate_placementspace("rocket", save_data["start_modul_pos"]["rocket"][0], save_data["start_modul_pos"]["rocket"][1])
+            if save_data["start_modul_pos"]["rocket"] is not None:
+                rr = calculate_placementspace("rocket", save_data["start_modul_pos"]["rocket"][0], save_data["start_modul_pos"]["rocket"][1])
+            else:
+                rr = []
             for extra in save_data["rocket"]["extra_pos"]:
                 temp = calculate_placementspace("rocket", extra[0], extra[1])
                 rr.extend(temp)
@@ -1591,8 +1617,10 @@ class GameHomeBase(GameScene):
                 if abs(pos[0] - x) <= 0.5 and abs(pos[1] - y) <= 0.5:
                     print("yay")
                     index = rr.index(pos)
-                    print(pos, rr[index - index % 4])
-                    self.rocket_menu = RocketMenu(['test1', 'test2', 'test3', 'tes4', 'test5'], f"Rocket at {rr[index - index % 4]}")
+                    rocket_pos = rr[index - index % 4]
+                    print(pos, rocket_pos)
+                    self.rocket_menu = RocketMenu(rocket_modelle, f"Rocket at {rocket_pos}")
+                    self.rocket_menu.launch_pos = rocket_pos  # Speichere die Position
                     self.rocket_menu.open()
                     return
 
@@ -1617,6 +1645,7 @@ class GameSketch(GameScene):
             else:
                 screen.blit(modul, (x2, 300))
                 x2+=80
+    
         center_x = WIDTH - 100
         y = 100
 
@@ -1900,6 +1929,68 @@ def miner_return(element: list[tuple[int, int, int, int]], change_lib: dict = st
                 save_data["resources"][resource] = save_data["resource_max"][resource]
         else:
             save_data["resources"][resource] += change
+
+
+def launch_rocket(rocket_type: str, orbit: str, lounch_pos: list):
+    """Launch a rocket with satellites to the specified orbit"""
+    global save_data
+    
+    # Check if rocket type exists
+    if rocket_type not in save_data["rockets"]:
+        print(f"Rocket type {rocket_type} not found!")
+        return False
+    
+    rocket_config = save_data["rockets"][rocket_type]
+    
+    # Check if orbit has available rockets
+    if orbit not in rocket_config or rocket_config[orbit] <= 0:
+        print(f"No rockets available for {orbit}!")
+        return False
+    
+    # Get resource costs from the rocket config
+    resources_needed = {}
+    for resource in ["electricity", "metal", "minerals", "water", "communication", "money", "science"]:
+        if resource in rocket_config:
+            resources_needed[resource] = rocket_config[resource]
+    
+    # Check if we have enough resources
+    for resource, cost in resources_needed.items():
+        current = save_data["resources"].get(resource, 0)
+        if current + cost < 0:
+            print(f"Not enough {resource}! Need {abs(cost)}, have {current}")
+            return False
+    
+    # Deduct resources
+    for resource, cost in resources_needed.items():
+        if resource == "electricity":
+            continue
+        else:
+            save_data["resources"][resource] += cost
+    
+    # Add satellites to the orbit
+    sat_key = f"sateliten{orbit}"  # "satelitenLEO" or "satelitenGEO"
+    if sat_key not in save_data:
+        save_data[sat_key] = 0
+    
+    # Each rocket can carry multiple satellites
+    satellites_per_rocket = rocket_config[orbit]
+    save_data[sat_key] += satellites_per_rocket
+    
+    # Decrease rocket count
+    save_data["rocket"]["number"] -= 1
+    if lounch_pos == save_data["start_modul_pos"]["rocket"]:
+        save_data["start_modul_pos"]["rocket"] = None
+    else:
+        save_data["rocket"]["extra_pos"].remove(lounch_pos)
+    occupied_place = calculate_placementspace("rocket", lounch_pos[0], lounch_pos[1])
+    for pos in occupied_place:
+        save_data["placed_objects"].remove(pos)
+
+    
+    print(f"Successfully launched {rocket_type} to {orbit}!")
+    print(f"Satellites in {orbit}: {save_data[sat_key]}")
+    
+    return True
 
 #setzt die buttonkollision für die szenen um
 def on_mouse_down(pos, button):
